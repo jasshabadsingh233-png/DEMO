@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ranjit Industries | Precision Brass Components</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --deep-brown: #4B3621;
+            --soft-beige: #F5F5DC;
+        }
+        .bg-brown { background-color: var(--deep-brown); }
+        .text-brown { color: var(--deep-brown); }
+        .border-brown { border-color: var(--deep-brown); }
+        .bg-beige { background-color: var(--soft-beige); }
+    </style>
+</head>
+<body class="bg-white text-gray-800 font-sans">
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 bg-white shadow-sm z-50 py-4 px-8 flex justify-between items-center">
+        <div class="text-2xl font-bold text-brown tracking-tighter">RANJIT INDUSTRIES</div>
+        <div class="hidden md:flex space-x-8 font-medium text-sm uppercase tracking-widest">
+            <a href="#about" class="hover:text-amber-700">About</a>
+            <a href="#products" class="hover:text-amber-700">Products</a>
+            <a href="#quality" class="hover:text-amber-700">Quality</a>
+            <a href="#contact" class="hover:text-amber-700">Contact</a>
+        </div>
+        <a href="mailto:info@ranjitindustries.net" class="border border-brown px-5 py-2 text-xs font-bold uppercase tracking-tighter hover:bg-brown hover:text-white transition-all">
+            Get a Quote
+        </a>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="relative h-[80vh] flex items-center justify-center bg-beige overflow-hidden">
+        <div class="text-center z-10 px-4">
+            <h1 class="text-5xl md:text-7xl font-light text-brown mb-6">Precision in Brass.</h1>
+            <p class="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                A legacy of engineering excellence in Jamnagar since 1964. 
+                Exporting high-quality components to 17+ countries worldwide.
+            </p>
+        </div>
+    </header>
+
+    <!-- About / Growth Section -->
+    <section id="about" class="py-24 px-8 max-w-6xl mx-auto">
+        <div class="grid md:grid-cols-2 gap-16 items-center">
+            <div>
+                <h2 class="text-3xl font-light text-brown mb-8 uppercase tracking-widest">Our Evolution</h2>
+                <p class="text-gray-600 mb-6 leading-relaxed">
+                    Starting from a 700 sq. ft. workshop, we have expanded into a 51,000 sq. ft. 
+                    state-of-the-art manufacturing facility[cite: 1].
+                </p>
+                <div class="grid grid-cols-2 gap-8 border-t border-gray-100 pt-8">
+                    <div>
+                        <span class="block text-3xl font-bold text-brown">155+</span>
+                        <span class="text-xs uppercase tracking-widest text-gray-400">Advanced Machines[cite: 1]</span>
+                    </div>
+                    <div>
+                        <span class="block text-3xl font-bold text-brown">$6.33M</span>
+                        <span class="text-xs uppercase tracking-widest text-gray-400">2023 Turnover[cite: 1]</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-beige h-96 flex items-center justify-center">
+                <span class="text-gray-400 italic">[Facility Image Placeholder]</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Products Section -->
+    <section id="products" class="bg-beige py-24 px-8">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-light text-brown mb-16 text-center uppercase tracking-widest">Product Verticals</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Card 1 -->
+                <div class="bg-white p-10 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 class="font-bold mb-4 text-brown uppercase">Electrical</h3>
+                    <p class="text-sm text-gray-600 leading-relaxed">Terminal bars, neutral links, and earth bars manufactured to global standards[cite: 1].</p>
+                </div>
+                <!-- Card 2 -->
+                <div class="bg-white p-10 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 class="font-bold mb-4 text-brown uppercase">Sanitary</h3>
+                    <p class="text-sm text-gray-600 leading-relaxed">Specialized knurled nuts, conus, and flexible metal shower hose components[cite: 1].</p>
+                </div>
+                <!-- Card 3 -->
+                <div class="bg-white p-10 shadow-sm hover:shadow-md transition-shadow">
+                    <h3 class="font-bold mb-4 text-brown uppercase">Fasteners</h3>
+                    <p class="text-sm text-gray-600 leading-relaxed">High-precision brass and mild steel screws, nuts, and washers[cite: 1].</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quality Section -->
+    <section id="quality" class="py-24 px-8 max-w-4xl mx-auto text-center">
+        <h2 class="text-3xl font-light text-brown mb-8 uppercase tracking-widest">Commitment to Quality</h2>
+        <p class="text-gray-600 mb-12">
+            We operate under a zero-defect policy, supported by ISO 9001:2015, 14001:2015, and 45001:2018 certifications[cite: 1]. 
+            Our products are fully ROHS and REACH compliant[cite: 1].
+        </p>
+        <div class="flex flex-wrap justify-center gap-4">
+            <span class="px-4 py-2 border border-gray-200 text-xs font-bold">PROFILE PROJECTOR[cite: 1]</span>
+            <span class="px-4 py-2 border border-gray-200 text-xs font-bold">SALT SPRAY TESTER[cite: 1]</span>
+            <span class="px-4 py-2 border border-gray-200 text-xs font-bold">HARDNESS TESTER[cite: 1]</span>
+        </div>
+    </section>
+
+    <!-- Footer / Contact -->
+    <footer id="contact" class="bg-brown text-white py-20 px-8">
+        <div class="max-w-6xl mx-auto grid md:grid-cols-2 gap-12">
+            <div>
+                <h2 class="text-2xl font-light mb-8 uppercase tracking-widest">Contact Us</h2>
+                <p class="mb-2 text-sm opacity-80">Plot No. 4028, G.I.D.C., Phase-III,</p>
+                <p class="mb-2 text-sm opacity-80">Dared, Jamnagar - 361004 (INDIA)[cite: 1]</p>
+                <p class="mt-8 font-bold text-lg">+91-98254 12832[cite: 1]</p>
+                <p class="text-sm opacity-80">Ravipal Singh[cite: 1]</p>
+            </div>
+            <div class="flex flex-col justify-end md:items-end">
+                <p class="text-sm mb-4">info@ranjitindustries.net[cite: 1]</p>
+                <p class="text-xs opacity-50 font-mono">© 2026 RANJIT INDUSTRIES. ALL RIGHTS RESERVED.</p>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
