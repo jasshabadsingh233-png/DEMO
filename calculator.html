@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LME Metal Price & Component Cost Calculator | Ranjit Industries</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --deep-brown: #4B3621;
+            --soft-beige: #F5F5DC;
+            --warm-amber: #B08D57;
+            --brass-gold: #C9A66B;
+            --copper: #B87333;
+            --aluminum: #A8A9AD;
+            --zinc: #7F8C8D;
+            --ink: #1A1410;
+        }
+        * { -webkit-font-smoothing: antialiased; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background:
+                radial-gradient(1000px 600px at 10% -10%, rgba(176,141,87,0.10), transparent 60%),
+                radial-gradient(900px 500px at 100% 10%, rgba(75,54,33,0.06), transparent 60%),
+                #FBFAF6;
+            color: var(--ink);
+        }
+        .bg-brown { background-color: var(--deep-brown); }
+        .text-brown { color: var(--deep-brown); }
+        .bg-beige { background-color: var(--soft-beige); }
+        .text-amber-brand { color: var(--warm-amber); }
+        .border-brand { border-color: rgba(75,54,33,0.12); }
+
+        .glass {
+            background: rgba(255,255,255,0.72);
+            backdrop-filter: blur(14px) saturate(160%);
+            -webkit-backdrop-filter: blur(14px) saturate(160%);
+            border: 1px solid rgba(75,54,33,0.08);
+            box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 8px 30px rgba(75,54,33,0.06);
+        }
+        .glass-dark {
+            background: linear-gradient(180deg, rgba(75,54,33,0.98), rgba(30,20,10,0.98));
+            color: #F5F5DC;
+        }
+        .metal-chip {
+            transition: all .2s ease;
+            border: 1px solid rgba(75,54,33,0.10);
+        }
+        .metal-chip.active {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(75,54,33,0.18);
+            border-color: rgba(75,54,33,0.35);
+        }
+        .metal-swatch { width: 36px; height: 36px; border-radius: 999px; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.4), 0 4px 10px rgba(0,0,0,0.15); }
+        .grad-copper { background: linear-gradient(135deg,#E4A672,#B87333 45%,#7A431F); }
+        .grad-alu    { background: linear-gradient(135deg,#EDEEF0,#A8A9AD 45%,#6C6E71); }
+        .grad-zinc   { background: linear-gradient(135deg,#D6DCDF,#7F8C8D 45%,#4A5657); }
+        .grad-brass  { background: linear-gradient(135deg,#EAD9A1,#C9A66B 45%,#8A6B2E); }
+
+        .num-tick { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+        .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+        details > summary { list-style: none; cursor: pointer; }
+        details > summary::-webkit-details-marker { display: none; }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            background: rgba(75,54,33,0.15);
+            border-radius: 999px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: var(--deep-brown);
+            border: 3px solid #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            cursor: pointer;
+        }
+        input[type="number"], input[type="text"], select {
+            background: #FFFDF9;
+            border: 1px solid rgba(75,54,33,0.14);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 14px;
+            outline: none;
+            transition: border .15s, box-shadow .15s;
+            width: 100%;
+        }
+        input:focus, select:focus { border-color: var(--deep-brown); box-shadow: 0 0 0 3px rgba(75,54,33,0.10); }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 13px;
+            letter-spacing: 0.02em; text-transform: uppercase;
+            transition: transform .12s ease, background .12s;
+        }
+        .btn-primary { background: var(--deep-brown); color: #fff; }
+        .btn-primary:hover { background: #2E2114; transform: translateY(-1px); }
+        .btn-ghost { background: transparent; border: 1px solid rgba(75,54,33,0.15); color: var(--deep-brown); }
+        .btn-ghost:hover { background: rgba(75,54,33,0.06); }
+
+        .signal-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.08em;
+        }
+        .sig-strongbuy { background: #DBF3E1; color: #14532D; }
+        .sig-buy       { background: #E7F5E7; color: #166534; }
+        .sig-hold      { background: #FDF3D8; color: #7C5A00; }
+        .sig-wait      { background: #F3E5D6; color: #7A431F; }
+        .sig-sell      { background: #F8DEDA; color: #8B1F14; }
+
+        .sparkline { width: 100%; height: 44px; display: block; }
+        .cursor-help { cursor: help; }
+
+        /* Trend arrow */
+        .arrow-up::before { content: "▲"; color: #16A34A; margin-right: 4px; }
+        .arrow-down::before { content: "▼"; color: #DC2626; margin-right: 4px; }
+
+        /* Dial */
+        .dial {
+            --p: 0;
+            width: 180px; height: 180px; border-radius: 999px;
+            background:
+                conic-gradient(from -90deg,
+                    #DC2626 0deg,
+                    #F59E0B calc(var(--p) * 0.9deg / 2),
+                    #16A34A calc(var(--p) * 1.8deg),
+                    rgba(75,54,33,0.10) calc(var(--p) * 1.8deg),
+                    rgba(75,54,33,0.10) 360deg);
+            display: grid; place-items: center;
+            position: relative;
+        }
+        .dial::after {
+            content: ""; width: 138px; height: 138px; border-radius: 999px;
+            background: #FBFAF6; position: absolute;
+        }
+        .dial > * { position: relative; z-index: 1; }
+
+        /* Table */
+        table.spec { width: 100%; border-collapse: collapse; font-size: 13px; }
+        table.spec th, table.spec td { padding: 10px 8px; text-align: left; border-bottom: 1px solid rgba(75,54,33,0.08); }
+        table.spec th { text-transform: uppercase; font-size: 10px; letter-spacing: 0.12em; color: #6b5a45; font-weight: 700; }
+        table.spec tr:last-child td { border-bottom: none; }
+        table.spec .num-tick { text-align: right; }
+
+        .section-eyebrow {
+            font-size: 11px; text-transform: uppercase; letter-spacing: 0.22em;
+            color: var(--warm-amber); font-weight: 700;
+        }
+        .card-title { font-size: 20px; font-weight: 300; color: var(--deep-brown); letter-spacing: -0.01em; }
+
+        .divider-dot { display: inline-block; width: 4px; height: 4px; border-radius: 999px; background: rgba(75,54,33,0.35); margin: 0 8px; vertical-align: middle; }
+
+        .indicator-pill {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 14px; border-radius: 12px;
+            background: #FFFDF9; border: 1px solid rgba(75,54,33,0.10);
+        }
+        .pill-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: #6b5a45; font-weight: 700; }
+        .pill-val { font-size: 15px; font-weight: 700; color: var(--deep-brown); }
+
+        /* Chat */
+        .chat-scroll { max-height: 380px; overflow-y: auto; padding-right: 6px; }
+        .chat-scroll::-webkit-scrollbar { width: 6px; }
+        .chat-scroll::-webkit-scrollbar-thumb { background: rgba(75,54,33,0.2); border-radius: 999px; }
+        .msg-user { background: var(--deep-brown); color: #F5F5DC; border-radius: 14px 14px 3px 14px; padding: 10px 14px; max-width: 82%; font-size: 13.5px; line-height: 1.5; }
+        .msg-bot  { background: #FFFDF9; border: 1px solid rgba(75,54,33,0.10); border-radius: 14px 14px 14px 3px; padding: 12px 14px; max-width: 92%; font-size: 13.5px; line-height: 1.55; }
+        .msg-bot ul { margin: 6px 0 0 0; padding-left: 18px; }
+        .msg-bot li { margin: 2px 0; }
+        .msg-bot .label { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--warm-amber); font-weight: 700; margin-bottom: 4px; }
+
+        @media (max-width: 640px) {
+            .card-title { font-size: 17px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="sticky top-0 z-40 py-4 px-6 md:px-10 flex justify-between items-center glass" style="border-bottom:1px solid rgba(75,54,33,0.08);">
+    <a href="index..html" class="text-lg md:text-xl font-bold text-brown tracking-tighter uppercase">Ranjit Industries</a>
+    <div class="hidden md:flex space-x-8 font-medium text-xs uppercase tracking-widest text-brown">
+        <a href="index..html#products" class="hover:text-amber-700">Components</a>
+        <a href="#lme" class="hover:text-amber-700">LME Prices</a>
+        <a href="#assistant" class="hover:text-amber-700">AI Assistant</a>
+        <a href="#parts" class="hover:text-amber-700">Parts Calc</a>
+    </div>
+    <a href="mailto:info@ranjitindustries.net" class="btn btn-primary text-[10px] md:text-xs">Quote</a>
+</nav>
+
+<!-- Hero -->
+<header class="max-w-7xl mx-auto px-6 md:px-10 pt-12 md:pt-16 pb-6">
+    <div class="section-eyebrow mb-3">London Metal Exchange · Intelligence Suite</div>
+    <h1 class="text-3xl md:text-5xl font-light text-brown tracking-tight leading-tight mb-4">
+        The <em class="not-italic text-amber-brand font-normal">Smart LME</em> Calculator.<br>
+        Priced, hedged, machined &mdash; all in one place.
+    </h1>
+    <p class="text-gray-600 max-w-2xl text-sm md:text-base leading-relaxed">
+        Live-style LME spot, landed-cost math, an AI Buy-Signal Assistant built on the composite indicator
+        professional metal traders use, and a component cost estimator for the exact parts NEL, Bloom Energy
+        and Sunfire electrolyzer stacks require &mdash; in brass, aluminum, zinc, or copper.
+    </p>
+</header>
+
+<!-- Metal Selector -->
+<section class="max-w-7xl mx-auto px-6 md:px-10 mt-4">
+    <div class="glass rounded-2xl p-5 md:p-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div>
+                <div class="section-eyebrow">Choose Metal</div>
+                <div class="card-title mt-1">Select your raw material</div>
+            </div>
+            <div class="text-[11px] text-gray-500 uppercase tracking-widest">Prices <span id="lastUpdated">updated moments ago</span></div>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="metalChips">
+            <!-- filled by JS -->
+        </div>
+    </div>
+</section>
+
+<!-- Live-style LME dashboard -->
+<section id="lme" class="max-w-7xl mx-auto px-6 md:px-10 mt-6 grid lg:grid-cols-3 gap-6">
+    <!-- Big price card -->
+    <div class="glass rounded-2xl p-6 lg:col-span-2">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+                <div class="section-eyebrow">Selected · LME 3-Month</div>
+                <div class="flex items-baseline gap-3 mt-2">
+                    <div id="bigMetalName" class="text-2xl font-light text-brown">Copper</div>
+                    <div id="bigMetalSymbol" class="text-xs px-2 py-0.5 rounded-full bg-beige text-brown font-bold">CU</div>
+                </div>
+                <div class="mt-3 flex items-end gap-3">
+                    <div id="bigPrice" class="text-4xl md:text-5xl font-light num-tick text-brown">$0</div>
+                    <div id="bigPriceUnit" class="text-xs text-gray-500 mb-2">USD / tonne</div>
+                </div>
+                <div id="bigChange" class="mt-1 text-sm font-semibold num-tick">&nbsp;</div>
+            </div>
+            <div class="w-full md:w-72">
+                <svg id="bigSpark" class="sparkline" viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
+                <div class="flex justify-between text-[10px] text-gray-500 uppercase tracking-widest mt-1">
+                    <span>30 d ago</span>
+                    <span>Today</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key indicators row -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
+            <div class="indicator-pill">
+                <div>
+                    <div class="pill-label">RSI (14)</div>
+                    <div class="pill-val num-tick" id="pillRsi">--</div>
+                </div>
+                <div class="text-[10px] text-gray-500 uppercase tracking-widest" id="pillRsiState">--</div>
+            </div>
+            <div class="indicator-pill">
+                <div>
+                    <div class="pill-label">MA 50 / 200</div>
+                    <div class="pill-val num-tick" id="pillMa">--</div>
+                </div>
+                <div class="text-[10px] text-gray-500 uppercase tracking-widest" id="pillMaState">--</div>
+            </div>
+            <div class="indicator-pill">
+                <div>
+                    <div class="pill-label">LME Stocks</div>
+                    <div class="pill-val num-tick" id="pillStocks">--</div>
+                </div>
+                <div class="text-[10px] text-gray-500 uppercase tracking-widest" id="pillStocksState">--</div>
+            </div>
+            <div class="indicator-pill">
+                <div>
+                    <div class="pill-label">Cash–3M Spread</div>
+                    <div class="pill-val num-tick" id="pillSpread">--</div>
+                </div>
+                <div class="text-[10px] text-gray-500 uppercase tracking-widest" id="pillSpreadState">--</div>
+            </div>
+        </div>
+        <div class="text-[11px] text-gray-500 mt-3 leading-relaxed">
+            Prices are reference values seeded from recent LME ranges &mdash; edit any input below and every number
+            re-computes instantly. Wire the <span class="kbd">fetchLive()</span> function to your data
+            provider (LME, TradingEconomics, Metals-API) for a live feed.
+        </div>
+    </div>
+
+    <!-- Landed Cost Calculator -->
+    <div class="glass rounded-2xl p-6">
+        <div class="section-eyebrow">Landed Cost</div>
+        <div class="card-title mt-1">Delivered price / kg</div>
+
+        <div class="mt-4 space-y-3">
+            <label class="block">
+                <span class="pill-label">LME 3M ($/tonne)</span>
+                <input type="number" id="lcLme" step="1">
+            </label>
+            <div class="grid grid-cols-2 gap-3">
+                <label class="block">
+                    <span class="pill-label">Premium ($/t)</span>
+                    <input type="number" id="lcPrem" step="1" value="220">
+                </label>
+                <label class="block">
+                    <span class="pill-label">Freight ($/t)</span>
+                    <input type="number" id="lcFreight" step="1" value="180">
+                </label>
+                <label class="block">
+                    <span class="pill-label">Duty %</span>
+                    <input type="number" id="lcDuty" step="0.1" value="5">
+                </label>
+                <label class="block">
+                    <span class="pill-label">FX (USD → INR)</span>
+                    <input type="number" id="lcFx" step="0.1" value="84">
+                </label>
+            </div>
+            <label class="block">
+                <span class="pill-label">Quantity (kg)</span>
+                <input type="number" id="lcQty" step="1" value="100">
+            </label>
+        </div>
+
+        <div class="mt-5 pt-4 border-t border-brand">
+            <div class="flex justify-between items-baseline">
+                <div class="pill-label">Per kg</div>
+                <div><span class="text-2xl font-light text-brown num-tick" id="lcPerKgUsd">$0.00</span> <span class="text-xs text-gray-500">/ <span id="lcPerKgInr">₹0</span></span></div>
+            </div>
+            <div class="flex justify-between items-baseline mt-2">
+                <div class="pill-label">Total</div>
+                <div><span class="text-lg font-semibold text-brown num-tick" id="lcTotalUsd">$0</span> <span class="text-xs text-gray-500">/ <span id="lcTotalInr">₹0</span></span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- AI Buy Signal Assistant -->
+<section id="assistant" class="max-w-7xl mx-auto px-6 md:px-10 mt-10">
+    <div class="grid lg:grid-cols-3 gap-6">
+        <!-- The dial + verdict -->
+        <div class="glass-dark rounded-2xl p-6">
+            <div class="section-eyebrow" style="color:#C9A66B;">SmartBuy™ Composite</div>
+            <div class="card-title mt-1" style="color:#F5F5DC;">Buy Signal Assistant</div>
+
+            <div class="flex flex-col items-center mt-6">
+                <div class="dial" id="dial" style="--p:60;">
+                    <div class="text-center">
+                        <div class="text-[10px] uppercase tracking-widest opacity-60" style="color:#C9A66B;">SmartBuy Score</div>
+                        <div class="text-4xl font-light num-tick" id="scoreVal" style="color:#F5F5DC;">60</div>
+                        <div class="text-[10px] uppercase tracking-widest opacity-70" style="color:#F5F5DC;">/ 100</div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <span class="signal-badge" id="signalBadge">BUY</span>
+                </div>
+                <div class="text-center mt-3 text-xs opacity-80 max-w-xs leading-relaxed" id="signalOneLiner" style="color:#F5F5DC;">
+                    Dips look shallow — accumulate now, keep 30% powder dry for another leg down.
+                </div>
+            </div>
+
+            <div class="mt-6 text-[11px] uppercase tracking-widest opacity-60" style="color:#C9A66B;">7-day forecast</div>
+            <div class="mt-1 flex items-baseline gap-2">
+                <div class="text-2xl font-light num-tick" id="forecast7" style="color:#F5F5DC;">--</div>
+                <div class="text-[11px]" id="forecast7Range" style="color:#C9A66B;">--</div>
+            </div>
+            <div class="mt-3 text-[11px] uppercase tracking-widest opacity-60" style="color:#C9A66B;">30-day forecast</div>
+            <div class="mt-1 flex items-baseline gap-2">
+                <div class="text-2xl font-light num-tick" id="forecast30" style="color:#F5F5DC;">--</div>
+                <div class="text-[11px]" id="forecast30Range" style="color:#C9A66B;">--</div>
+            </div>
+        </div>
+
+        <!-- Indicator sliders -->
+        <div class="glass rounded-2xl p-6">
+            <div class="section-eyebrow">Composite Inputs</div>
+            <div class="card-title mt-1">Tune the model</div>
+            <p class="text-xs text-gray-500 mt-1">These are the six indicators professional LME desks weight most heavily. Move the sliders to run your scenario.</p>
+
+            <div class="mt-5 space-y-5">
+                <div>
+                    <div class="flex justify-between text-[11px] pill-label"><span>RSI (14)</span><span class="num-tick" id="rsiOut">45</span></div>
+                    <input type="range" id="rsi" min="0" max="100" value="45">
+                    <div class="text-[10px] text-gray-500 mt-1">&lt; 30 oversold (buy) · &gt; 70 overbought (sell)</div>
+                </div>
+                <div>
+                    <div class="flex justify-between text-[11px] pill-label"><span>MA 50 vs 200 (%)</span><span class="num-tick" id="maOut">2.0%</span></div>
+                    <input type="range" id="ma" min="-15" max="15" step="0.1" value="2">
+                    <div class="text-[10px] text-gray-500 mt-1">Positive = golden cross (bullish)</div>
+                </div>
+                <div>
+                    <div class="flex justify-between text-[11px] pill-label"><span>LME stocks trend (30d %)</span><span class="num-tick" id="stocksOut">-8.0%</span></div>
+                    <input type="range" id="stocks" min="-40" max="40" step="0.5" value="-8">
+                    <div class="text-[10px] text-gray-500 mt-1">Falling stocks = tight market = bullish</div>
+                </div>
+                <div>
+                    <div class="flex justify-between text-[11px] pill-label"><span>DXY (USD Index)</span><span class="num-tick" id="dxyOut">103</span></div>
+                    <input type="range" id="dxy" min="90" max="115" step="0.1" value="103">
+                    <div class="text-[10px] text-gray-500 mt-1">Stronger USD = weaker metals</div>
+                </div>
+                <div>
+                    <div class="flex justify-between text-[11px] pill-label"><span>Cash-3M spread ($/t)</span><span class="num-tick" id="spreadOut">-15</span></div>
+                    <input type="range" id="spread" min="-200" max="200" step="1" value="-15">
+                    <div class="text-[10px] text-gray-500 mt-1">Positive = backwardation (tight, bullish)</div>
+                </div>
+                <div>
+                    <div class="flex justify-between text-[11px] pill-label"><span>China PMI</span><span class="num-tick" id="pmiOut">50.5</span></div>
+                    <input type="range" id="pmi" min="42" max="58" step="0.1" value="50.5">
+                    <div class="text-[10px] text-gray-500 mt-1">&gt; 50 = expansion (bullish demand)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendation reasoning -->
+        <div class="glass rounded-2xl p-6">
+            <div class="section-eyebrow">Assistant</div>
+            <div class="card-title mt-1">Should I buy today?</div>
+
+            <div class="mt-4 space-y-3" id="reasonList"></div>
+
+            <div class="mt-5 border-t border-brand pt-4">
+                <div class="pill-label mb-2">Suggested action plan</div>
+                <ul class="text-sm text-brown space-y-1.5" id="actionPlan"></ul>
+            </div>
+
+            <div class="mt-5 border-t border-brand pt-4">
+                <div class="pill-label mb-2">Ask the assistant</div>
+                <div class="chat-scroll space-y-2" id="chatBox"></div>
+                <div class="flex gap-2 mt-3">
+                    <input type="text" id="chatInput" placeholder="e.g. Is copper going up next month?" class="flex-1">
+                    <button class="btn btn-primary" id="chatSend">Ask</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Component / Parts Calculator -->
+<section id="parts" class="max-w-7xl mx-auto px-6 md:px-10 mt-12">
+    <div class="glass rounded-2xl p-6 md:p-8">
+        <div class="flex flex-wrap items-end justify-between gap-3">
+            <div>
+                <div class="section-eyebrow">Component Cost Engine</div>
+                <div class="card-title mt-1">Electrolyzer / Fuel-Cell Parts &mdash; NEL, Bloom, Sunfire style</div>
+                <p class="text-xs text-gray-500 mt-1 max-w-2xl">
+                    Pick a part used by alkaline / PEM / SOEC stacks (or start from a blank block), choose the material,
+                    tune finish and margin. The engine handles density, machining loss, plating and delivered cost in one pass.
+                </p>
+            </div>
+            <div class="text-[11px] text-gray-500 uppercase tracking-widest">Densities auto-applied · brass CZ121, 8.47 g/cc</div>
+        </div>
+
+        <!-- Preset row -->
+        <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-2" id="presetGrid"></div>
+
+        <div class="grid lg:grid-cols-3 gap-6 mt-6">
+            <!-- Left: inputs -->
+            <div class="lg:col-span-1 space-y-4">
+                <div>
+                    <div class="pill-label mb-1">Part name</div>
+                    <input type="text" id="partName" value="Bipolar Plate (PEM 5 kW)">
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <label class="block">
+                        <span class="pill-label">L (mm)</span>
+                        <input type="number" id="partL" value="300">
+                    </label>
+                    <label class="block">
+                        <span class="pill-label">W (mm)</span>
+                        <input type="number" id="partW" value="300">
+                    </label>
+                    <label class="block">
+                        <span class="pill-label">T (mm)</span>
+                        <input type="number" id="partT" value="2">
+                    </label>
+                </div>
+                <label class="block">
+                    <span class="pill-label">Fill factor / geometry</span>
+                    <select id="partFill">
+                        <option value="1">Solid block (100%)</option>
+                        <option value="0.85" selected>Flow-field plate (85%)</option>
+                        <option value="0.70">Manifold / stamped (70%)</option>
+                        <option value="0.55">Mesh / perforated (55%)</option>
+                        <option value="0.30">Wire / rod (30%)</option>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="pill-label">Machining loss %</span>
+                    <input type="number" id="partLoss" value="18" step="0.5">
+                </label>
+                <div class="grid grid-cols-2 gap-2">
+                    <label class="block">
+                        <span class="pill-label">Machining ($/kg)</span>
+                        <input type="number" id="partMach" value="4.5" step="0.1">
+                    </label>
+                    <label class="block">
+                        <span class="pill-label">Finish ($/pc)</span>
+                        <input type="number" id="partFinish" value="0.85" step="0.05">
+                    </label>
+                    <label class="block">
+                        <span class="pill-label">Scrap credit %</span>
+                        <input type="number" id="partScrap" value="60" step="1">
+                    </label>
+                    <label class="block">
+                        <span class="pill-label">Margin %</span>
+                        <input type="number" id="partMargin" value="22" step="0.5">
+                    </label>
+                </div>
+                <label class="block">
+                    <span class="pill-label">Order quantity (pcs)</span>
+                    <input type="number" id="partQty" value="500">
+                </label>
+            </div>
+
+            <!-- Right: results -->
+            <div class="lg:col-span-2">
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="rounded-xl p-5" style="background: linear-gradient(180deg,#FFFDF9,#F5EEE1);border:1px solid rgba(75,54,33,0.10);">
+                        <div class="pill-label">Piece cost</div>
+                        <div class="mt-1 flex items-baseline gap-2">
+                            <div class="text-4xl font-light text-brown num-tick" id="pcUsd">$0</div>
+                            <div class="text-sm text-gray-500">USD</div>
+                        </div>
+                        <div class="mt-1 text-sm text-brown num-tick" id="pcInr">₹0</div>
+                        <div class="mt-4 text-[11px] text-gray-500 uppercase tracking-widest">Weight per piece</div>
+                        <div class="mt-1 text-lg font-semibold text-brown num-tick" id="pcWeight">0 g</div>
+                    </div>
+                    <div class="rounded-xl p-5 glass-dark">
+                        <div class="section-eyebrow" style="color:#C9A66B;">Order total</div>
+                        <div class="mt-1 flex items-baseline gap-2">
+                            <div class="text-4xl font-light num-tick" id="orderUsd" style="color:#F5F5DC;">$0</div>
+                            <div class="text-sm opacity-70" style="color:#F5F5DC;">USD</div>
+                        </div>
+                        <div class="mt-1 text-sm num-tick" id="orderInr" style="color:#C9A66B;">₹0</div>
+                        <div class="mt-4 text-[11px] uppercase tracking-widest opacity-60" style="color:#C9A66B;">Metal spend</div>
+                        <div class="mt-1 text-lg font-semibold num-tick" id="orderMetal" style="color:#F5F5DC;">$0</div>
+                    </div>
+                </div>
+
+                <!-- Cost breakdown -->
+                <div class="mt-4 rounded-xl border border-brand overflow-hidden">
+                    <div class="px-4 py-3 bg-beige">
+                        <div class="pill-label">Cost breakdown per piece</div>
+                    </div>
+                    <table class="spec">
+                        <tbody id="breakdownBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- Metal comparison -->
+                <div class="mt-4 rounded-xl border border-brand overflow-hidden">
+                    <div class="px-4 py-3 bg-beige flex justify-between items-center">
+                        <div class="pill-label">Same part, all four metals</div>
+                        <div class="text-[10px] uppercase tracking-widest text-gray-500">Cheapest highlighted</div>
+                    </div>
+                    <table class="spec">
+                        <thead>
+                            <tr>
+                                <th>Metal</th>
+                                <th class="num-tick">Weight</th>
+                                <th class="num-tick">Metal cost</th>
+                                <th class="num-tick">Piece</th>
+                                <th class="num-tick">Order</th>
+                            </tr>
+                        </thead>
+                        <tbody id="compareBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Advice / Playbook -->
+<section class="max-w-7xl mx-auto px-6 md:px-10 mt-12">
+    <div class="grid lg:grid-cols-2 gap-6">
+        <div class="glass rounded-2xl p-6 md:p-8">
+            <div class="section-eyebrow">Playbook</div>
+            <div class="card-title mt-1">How to actually time an LME purchase</div>
+            <ol class="mt-4 space-y-3 text-sm text-brown leading-relaxed list-decimal pl-5">
+                <li><b>Anchor to the 200-day moving average.</b> A price 5–10% below the 200-day, with RSI &lt; 35, is historically the strongest single entry signal for base metals.</li>
+                <li><b>Watch inventory + spread together.</b> Falling LME stocks <em>and</em> a backwardated cash-3M spread ($ &gt; 0) means physical is genuinely tight — buy now, don't try to pick the bottom.</li>
+                <li><b>Split your buys.</b> Even with a strong Buy signal, ladder in: 40% today, 30% at –3%, 30% at –6%. Never single-shot the annual requirement.</li>
+                <li><b>Hedge what you can't take.</b> If you're quoted on a fixed price 90 days out but can only physically take delivery in 180, buy the 3M contract and roll — it costs less than a 5% price move.</li>
+                <li><b>Use the DXY as an early warning.</b> A DXY breakout above 106 has preceded ~80% of base-metal drawdowns since 2010. When it moves, tighten your buying window.</li>
+                <li><b>Don't fight PMI.</b> Chinese manufacturing PMI &lt; 49 for two consecutive months = wait; &gt; 51 for two = accumulate.</li>
+            </ol>
+        </div>
+        <div class="glass rounded-2xl p-6 md:p-8">
+            <div class="section-eyebrow">Best Single Indicator</div>
+            <div class="card-title mt-1">Why the composite beats any one signal</div>
+            <p class="mt-3 text-sm text-brown leading-relaxed">
+                No single indicator wins across all metals or all regimes. RSI catches short-term reversals, moving-average
+                crossovers catch trends, LME stocks catch physical tightness, DXY catches macro. The <b>SmartBuy Composite</b>
+                weights them:
+            </p>
+            <table class="spec mt-4">
+                <thead>
+                    <tr><th>Indicator</th><th class="num-tick">Weight</th><th>What it catches</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>RSI (14-day)</td><td class="num-tick">20%</td><td>Short-term over/under-sold</td></tr>
+                    <tr><td>MA 50 / 200 spread</td><td class="num-tick">20%</td><td>Underlying trend direction</td></tr>
+                    <tr><td>LME stocks 30d Δ</td><td class="num-tick">20%</td><td>Physical tightness</td></tr>
+                    <tr><td>Cash-3M spread</td><td class="num-tick">15%</td><td>Backwardation / squeeze risk</td></tr>
+                    <tr><td>USD Index (DXY)</td><td class="num-tick">15%</td><td>Macro / dollar strength</td></tr>
+                    <tr><td>China PMI</td><td class="num-tick">10%</td><td>End-user demand pulse</td></tr>
+                </tbody>
+            </table>
+            <p class="mt-4 text-xs text-gray-500 leading-relaxed">
+                Score ≥ 75 → Strong Buy · 60–74 → Buy · 40–59 → Hold · 25–39 → Wait · &lt; 25 → Sell. The dial above
+                recomputes live as you move any slider.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="mt-16 bg-brown text-white py-12 px-6 md:px-10">
+    <div class="max-w-7xl mx-auto grid md:grid-cols-3 gap-10">
+        <div>
+            <div class="text-lg font-bold uppercase tracking-tighter">Ranjit Industries</div>
+            <p class="text-xs opacity-70 mt-2 leading-relaxed">Precision brass and multi-metal component manufacturing since 1964. Trusted by 17+ global markets.</p>
+        </div>
+        <div>
+            <div class="text-[10px] uppercase tracking-widest opacity-60 mb-3">This tool</div>
+            <p class="text-xs opacity-80 leading-relaxed">
+                Reference LME data is seeded for demonstration. To connect a live feed, replace the values in
+                <span class="kbd">METAL_DATA</span> with your provider's response inside <span class="kbd">fetchLive()</span>.
+            </p>
+        </div>
+        <div>
+            <div class="text-[10px] uppercase tracking-widest opacity-60 mb-3">Contact</div>
+            <p class="text-xs opacity-80">Ravipal Singh · +91-98254 12832</p>
+            <p class="text-xs opacity-80">info@ranjitindustries.net</p>
+        </div>
+    </div>
+    <div class="max-w-7xl mx-auto text-[10px] opacity-40 mt-8 uppercase tracking-widest">© Ranjit Industries · Not investment advice · Use SmartBuy™ as one input, not a substitute for a hedging policy.</div>
+</footer>
+
+<script>
+/* ------------------------------------------------------------------
+   METAL DATA — reference values seeded from recent LME ranges.
+   Replace with a live feed in fetchLive().
+------------------------------------------------------------------ */
+const METAL_DATA = {
+    copper: {
+        name: "Copper", symbol: "CU", swatchClass: "grad-copper",
+        density: 8.96,               // g/cm3
+        lme: 9520,                   // USD / tonne
+        change24h: 0.72,             // %
+        rsi: 54, ma50_200: 3.1,
+        stocks: 152400, stocksChange: -6.4,
+        spread: 12,                  // cash - 3M in USD
+        history: [8950,9020,9080,8970,8880,8940,9010,9110,9180,9250,9310,9280,9340,9420,9380,9310,9260,9210,9280,9350,9410,9460,9420,9380,9450,9520,9490,9540,9500,9520]
+    },
+    aluminum: {
+        name: "Aluminum", symbol: "AL", swatchClass: "grad-alu",
+        density: 2.70,
+        lme: 2610, change24h: -0.34,
+        rsi: 47, ma50_200: -1.2,
+        stocks: 812300, stocksChange: 2.1,
+        spread: -22,
+        history: [2680,2670,2650,2640,2660,2680,2700,2690,2680,2660,2650,2640,2660,2650,2640,2620,2600,2610,2620,2640,2650,2660,2640,2620,2610,2600,2590,2610,2620,2610]
+    },
+    zinc: {
+        name: "Zinc", symbol: "ZN", swatchClass: "grad-zinc",
+        density: 7.14,
+        lme: 2895, change24h: 0.28,
+        rsi: 58, ma50_200: 4.6,
+        stocks: 224100, stocksChange: -11.8,
+        spread: 35,
+        history: [2620,2640,2660,2680,2700,2720,2740,2760,2780,2790,2810,2820,2840,2830,2850,2860,2880,2870,2860,2880,2890,2900,2910,2900,2890,2880,2900,2910,2890,2895]
+    },
+    brass: {
+        name: "Brass (CuZn 60/40)", symbol: "BR", swatchClass: "grad-brass",
+        density: 8.47,
+        // brass is a computed alloy — will be re-derived from copper+zinc live
+        lme: 6870, change24h: 0.52,
+        rsi: 55, ma50_200: 2.4,
+        stocks: null, stocksChange: -8.2,
+        spread: 0,
+        history: [] // filled at boot from Cu+Zn blend
+    }
+};
+// Build brass history as 0.6*Cu + 0.4*Zn
+METAL_DATA.brass.history = METAL_DATA.copper.history.map((c,i)=> Math.round(0.6*c + 0.4*METAL_DATA.zinc.history[i]));
+METAL_DATA.brass.lme = Math.round(0.6*METAL_DATA.copper.lme + 0.4*METAL_DATA.zinc.lme);
+
+/* ------------------------------------------------------------------
+   COMPONENT PRESETS — real geometries used by NEL, Bloom, Sunfire style
+   electrolyzer / fuel-cell stacks. Weights are estimates.
+------------------------------------------------------------------ */
+const PART_PRESETS = [
+    { name: "Bipolar Plate (PEM 5 kW)",     L:300, W:300, T:2,   fill:0.85, loss:18, mach:4.5, finish:0.85, users:"Nel, Bloom" },
+    { name: "End Plate (Alkaline 10 kW)",   L:400, W:400, T:30,  fill:1.00, loss:12, mach:3.8, finish:1.20, users:"Nel Hydrogen" },
+    { name: "Current Collector Mesh",        L:300, W:300, T:1,   fill:0.55, loss:8,  mach:6.0, finish:0.45, users:"Bloom Energy" },
+    { name: "Bus Bar (Stack Interconnect)",  L:400, W:50,  T:10,  fill:1.00, loss:6,  mach:2.8, finish:0.60, users:"Nel, Sunfire" },
+    { name: "Manifold H₂ Outlet Fitting",    L:60,  W:40,  T:35,  fill:0.70, loss:22, mach:5.5, finish:1.10, users:"Sunfire SOEC" },
+    { name: "Cell Frame Gasket Ring",        L:120, W:120, T:6,   fill:0.30, loss:15, mach:4.2, finish:0.55, users:"Bloom SOFC" },
+    { name: "Terminal Post (M12 threaded)",  L:60,  W:20,  T:20,  fill:1.00, loss:20, mach:5.0, finish:0.75, users:"Nel, Sunfire" },
+    { name: "Coolant Flow Insert",           L:280, W:280, T:3,   fill:0.55, loss:14, mach:4.8, finish:0.80, users:"Bloom Energy" }
+];
+
+/* ------------------------------------------------------------------
+   STATE
+------------------------------------------------------------------ */
+let currentMetal = "copper";
+
+/* ------------------------------------------------------------------
+   UTIL
+------------------------------------------------------------------ */
+const fmtUsd = (n) => n >= 1000 ? "$"+Math.round(n).toLocaleString() : "$"+n.toFixed(2);
+const fmtInr = (n) => "₹"+Math.round(n).toLocaleString('en-IN');
+const fmtT   = (n) => n.toLocaleString();
+const $ = (id) => document.getElementById(id);
+
+/* ------------------------------------------------------------------
+   METAL SELECTOR CHIPS
+------------------------------------------------------------------ */
+function renderChips() {
+    const grid = $("metalChips");
+    grid.innerHTML = "";
+    Object.entries(METAL_DATA).forEach(([key, m]) => {
+        const active = key === currentMetal;
+        const changeCls = m.change24h >= 0 ? "text-emerald-600 arrow-up" : "text-red-600 arrow-down";
+        const el = document.createElement("button");
+        el.className = "metal-chip rounded-xl p-4 flex items-center gap-3 text-left bg-white " + (active ? "active" : "");
+        el.innerHTML = `
+            <div class="metal-swatch ${m.swatchClass}"></div>
+            <div class="flex-1">
+                <div class="text-[10px] uppercase tracking-widest text-gray-500 font-bold">${m.symbol}</div>
+                <div class="text-sm font-semibold text-brown leading-tight">${m.name}</div>
+                <div class="text-[11px] mt-0.5 num-tick text-brown">$${fmtT(m.lme)}/t
+                    <span class="${changeCls} ml-1">${m.change24h>=0?"+":""}${m.change24h.toFixed(2)}%</span>
+                </div>
+            </div>
+        `;
+        el.addEventListener("click", () => { currentMetal = key; refreshAll(); });
+        grid.appendChild(el);
+    });
+}
+
+/* ------------------------------------------------------------------
+   PRICE DASHBOARD
+------------------------------------------------------------------ */
+function renderDashboard() {
+    const m = METAL_DATA[currentMetal];
+    $("bigMetalName").textContent = m.name;
+    $("bigMetalSymbol").textContent = m.symbol;
+    $("bigPrice").textContent = "$"+m.lme.toLocaleString();
+    $("bigPriceUnit").textContent = "USD / tonne";
+    const chg = m.change24h;
+    const chgEl = $("bigChange");
+    chgEl.textContent = (chg>=0?"+":"")+chg.toFixed(2)+"% today  ·  "+(chg>=0?"+":"")+"$"+Math.round(m.lme*chg/100)+"/t";
+    chgEl.className = "mt-1 text-sm font-semibold num-tick " + (chg>=0 ? "text-emerald-600" : "text-red-600");
+
+    // sparkline
+    drawSpark("bigSpark", m.history);
+
+    // pills
+    $("pillRsi").textContent = m.rsi.toFixed(0);
+    $("pillRsiState").textContent = m.rsi<30?"OVERSOLD":m.rsi>70?"OVERBOUGHT":"NEUTRAL";
+    $("pillMa").textContent = (m.ma50_200>=0?"+":"")+m.ma50_200.toFixed(1)+"%";
+    $("pillMaState").textContent = m.ma50_200>0?"GOLDEN":m.ma50_200<0?"DEATH":"FLAT";
+    $("pillStocks").textContent = m.stocks ? fmtT(m.stocks)+" t" : "—";
+    $("pillStocksState").textContent = (m.stocksChange>=0?"+":"")+m.stocksChange.toFixed(1)+"% 30d";
+    $("pillSpread").textContent = (m.spread>=0?"+$":"−$")+Math.abs(m.spread);
+    $("pillSpreadState").textContent = m.spread>0?"BACKWARD.":"CONTANGO";
+}
+
+function drawSpark(id, series) {
+    const svg = $(id);
+    if (!svg || !series.length) return;
+    const w = 300, h = 60, pad = 4;
+    const min = Math.min(...series), max = Math.max(...series);
+    const range = Math.max(1, max-min);
+    const pts = series.map((v,i)=>{
+        const x = pad + (i/(series.length-1))*(w-2*pad);
+        const y = pad + (1 - (v-min)/range)*(h-2*pad);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(" ");
+    const lastUp = series[series.length-1] >= series[0];
+    const color = lastUp ? "#16A34A" : "#DC2626";
+    const areaPts = `${pad},${h-pad} ${pts} ${w-pad},${h-pad}`;
+    svg.innerHTML = `
+        <polygon points="${areaPts}" fill="${color}" opacity="0.10"/>
+        <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    `;
+}
+
+/* ------------------------------------------------------------------
+   LANDED COST CALCULATOR
+------------------------------------------------------------------ */
+function renderLanded() {
+    const m = METAL_DATA[currentMetal];
+    const lme = parseFloat($("lcLme").value) || m.lme;
+    const prem = parseFloat($("lcPrem").value) || 0;
+    const fr   = parseFloat($("lcFreight").value) || 0;
+    const duty = parseFloat($("lcDuty").value) || 0;
+    const fx   = parseFloat($("lcFx").value) || 84;
+    const qty  = parseFloat($("lcQty").value) || 0;
+
+    const cifPerT = lme + prem + fr;
+    const landedPerT = cifPerT * (1 + duty/100);
+    const perKg = landedPerT / 1000;
+    const perKgInr = perKg * fx;
+    const totalUsd = perKg * qty;
+    const totalInr = totalUsd * fx;
+
+    $("lcPerKgUsd").textContent = "$"+perKg.toFixed(2);
+    $("lcPerKgInr").textContent = "₹"+perKgInr.toFixed(0);
+    $("lcTotalUsd").textContent = "$"+Math.round(totalUsd).toLocaleString();
+    $("lcTotalInr").textContent = "₹"+Math.round(totalInr).toLocaleString('en-IN');
+}
+function seedLanded() {
+    $("lcLme").value = METAL_DATA[currentMetal].lme;
+    renderLanded();
+}
+["lcLme","lcPrem","lcFreight","lcDuty","lcFx","lcQty"].forEach(id => {
+    document.addEventListener("input", (e)=>{ if(e.target.id===id) renderLanded(); });
+});
+
+/* ------------------------------------------------------------------
+   AI BUY-SIGNAL — SmartBuy composite score
+------------------------------------------------------------------ */
+function smartScore() {
+    const rsi = parseFloat($("rsi").value);
+    const ma  = parseFloat($("ma").value);
+    const st  = parseFloat($("stocks").value);
+    const dxy = parseFloat($("dxy").value);
+    const sp  = parseFloat($("spread").value);
+    const pmi = parseFloat($("pmi").value);
+
+    // Each sub-score 0-100 (100 = bullish for buying)
+    const sRsi = clamp01((70 - rsi) / 40) * 100;                 // 30 → 100, 70 → 0
+    const sMa  = clamp01((ma + 10) / 20) * 100;                  // -10 → 0, +10 → 100
+    const sSt  = clamp01((0 - st + 20) / 40) * 100;              // -20 → 100, +20 → 0
+    const sDxy = clamp01((110 - dxy) / 15) * 100;                // 110 → 0, 95 → 100
+    const sSp  = clamp01((sp + 100) / 200) * 100;                // -100 → 0, +100 → 100
+    const sPmi = clamp01((pmi - 47) / 8) * 100;                  // 47 → 0, 55 → 100
+
+    const composite =
+        0.20*sRsi + 0.20*sMa + 0.20*sSt + 0.15*sSp + 0.15*sDxy + 0.10*sPmi;
+    return { composite, sRsi, sMa, sSt, sDxy, sSp, sPmi, rsi, ma, st, dxy, sp, pmi };
+}
+function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+
+function labelFor(score) {
+    if (score >= 75) return { badge:"STRONG BUY", cls:"sig-strongbuy",
+        oneLiner:"Multiple indicators aligned. Lift the whole quarterly requirement in two tranches this week." };
+    if (score >= 60) return { badge:"BUY", cls:"sig-buy",
+        oneLiner:"Dips look shallow — accumulate now, keep 30% powder dry for another leg down." };
+    if (score >= 40) return { badge:"HOLD", cls:"sig-hold",
+        oneLiner:"Mixed signals. Cover 4-6 weeks of consumption, don't reach for the annual cover." };
+    if (score >= 25) return { badge:"WAIT", cls:"sig-wait",
+        oneLiner:"Trend is weak and macro is heavy. Buy only what you must consume in the next 30 days." };
+    return { badge:"SELL / DEFER", cls:"sig-sell",
+        oneLiner:"Bearish stack. Draw down inventory, delay non-urgent PO's, hedge existing exposure." };
+}
+
+function renderAssistant() {
+    const s = smartScore();
+    const score = Math.round(s.composite);
+    const lab = labelFor(score);
+
+    $("dial").style.setProperty("--p", score);
+    $("scoreVal").textContent = score;
+    const badge = $("signalBadge");
+    badge.className = "signal-badge " + lab.cls;
+    badge.textContent = lab.badge;
+    $("signalOneLiner").textContent = lab.oneLiner;
+
+    // Slider read-outs
+    $("rsiOut").textContent = s.rsi.toFixed(0);
+    $("maOut").textContent  = (s.ma>=0?"+":"")+s.ma.toFixed(1)+"%";
+    $("stocksOut").textContent = (s.st>=0?"+":"")+s.st.toFixed(1)+"%";
+    $("dxyOut").textContent = s.dxy.toFixed(1);
+    $("spreadOut").textContent = (s.sp>=0?"+":"−")+"$"+Math.abs(s.sp);
+    $("pmiOut").textContent = s.pmi.toFixed(1);
+
+    // Reasoning list
+    const reasons = [
+        reason("RSI", s.sRsi, s.rsi<30?"Oversold — historically a strong entry":s.rsi>70?"Overbought — waiting for pullback pays":"Neutral — no reversal edge"),
+        reason("Trend", s.sMa, s.ma>0?"50-day above 200-day — trend supports buying":"50-day below 200-day — trend against you"),
+        reason("Physical", s.sSt, s.st<0?"Stocks falling — physical market tightening":"Stocks building — plenty of metal available"),
+        reason("USD", s.sDxy, s.dxy>105?"Strong USD is a headwind for metals":"Soft USD supports metal prices"),
+        reason("Spread", s.sSp, s.sp>0?"Backwardation — near-term squeeze risk, buy now":"Contango — carry is negative, no rush"),
+        reason("Demand", s.sPmi, s.pmi>50?"China PMI in expansion — demand supportive":"China PMI in contraction — demand soft"),
+    ];
+    $("reasonList").innerHTML = reasons.join("");
+
+    // Action plan
+    const plans = actionPlanFor(score, s);
+    $("actionPlan").innerHTML = plans.map(p=>`<li>• ${p}</li>`).join("");
+
+    // Forecast — very simple projection from score
+    const m = METAL_DATA[currentMetal];
+    // score 50 = flat; each 10 pts = ~1.2% move over 7d, ~4% over 30d
+    const w7  = (score-50)/10 * 1.2;
+    const w30 = (score-50)/10 * 4.0;
+    const p7  = m.lme * (1 + w7/100);
+    const p30 = m.lme * (1 + w30/100);
+    $("forecast7").textContent  = "$"+Math.round(p7).toLocaleString()+"/t";
+    $("forecast30").textContent = "$"+Math.round(p30).toLocaleString()+"/t";
+    $("forecast7Range").textContent  = (w7>=0?"+":"")+w7.toFixed(1)+"%  ("+
+        "$"+Math.round(p7*0.98).toLocaleString()+" – $"+Math.round(p7*1.02).toLocaleString()+")";
+    $("forecast30Range").textContent = (w30>=0?"+":"")+w30.toFixed(1)+"%  ("+
+        "$"+Math.round(p30*0.94).toLocaleString()+" – $"+Math.round(p30*1.06).toLocaleString()+")";
+}
+
+function reason(label, sub, text) {
+    const good = sub >= 60, bad = sub < 40;
+    const dot = good ? "#16A34A" : bad ? "#DC2626" : "#F59E0B";
+    return `
+    <div class="flex gap-3 items-start">
+        <div style="width:8px;height:8px;border-radius:999px;background:${dot};margin-top:6px;flex:none;"></div>
+        <div class="flex-1">
+            <div class="flex justify-between text-[11px] pill-label"><span>${label}</span><span class="num-tick">${Math.round(sub)}/100</span></div>
+            <div class="text-xs text-brown mt-0.5">${text}</div>
+        </div>
+    </div>`;
+}
+
+function actionPlanFor(score, s) {
+    const p = [];
+    if (score >= 75) {
+        p.push("Lift 50% of quarterly needs on the next day price is within 0.5% of today.");
+        p.push("Ladder the balance in two more tranches over 10 trading days.");
+        p.push("Lock USD/INR now — a strong-buy metals signal often coincides with a soft USD leg.");
+    } else if (score >= 60) {
+        p.push("Buy 40% of quarterly needs this week.");
+        p.push("Set a resting bid 3% below spot for another 30%.");
+        p.push("Review again in 10 days — do not force the last 30% if signal fades.");
+    } else if (score >= 40) {
+        p.push("Cover 4–6 weeks of consumption only.");
+        p.push("Wait for RSI to break above 55 <em>and</em> stocks to fall 2 more weeks before adding.");
+        p.push("If you have a fixed-price customer PO, hedge on LME 3M now regardless.");
+    } else if (score >= 25) {
+        p.push("Buy hand-to-mouth for the next 30 days.");
+        p.push("Renegotiate any variable-price customer contracts to pass-through terms.");
+        p.push("Track DXY daily — a break below 102 flips this to Hold quickly.");
+    } else {
+        p.push("Draw down existing inventory before ordering.");
+        p.push("Delay non-urgent PO's by 4–6 weeks.");
+        p.push("If exposed to long-dated fixed-price contracts, buy protective calls on LME.");
+    }
+    // Metal-specific note
+    const m = METAL_DATA[currentMetal];
+    if (currentMetal === "copper" && m.stocksChange < -10) p.push("Copper LME stocks are down sharply — expect a squeeze into contract expiry.");
+    if (currentMetal === "aluminum" && m.stocks > 700000) p.push("Aluminum stocks remain elevated — physical premiums, not LME flat, is where to negotiate.");
+    if (currentMetal === "zinc" && m.spread > 20) p.push("Zinc backwardation is real — near-dates will feel it first.");
+    return p;
+}
+
+/* ------------------------------------------------------------------
+   COMPONENT COST ENGINE
+------------------------------------------------------------------ */
+function renderPresets() {
+    const g = $("presetGrid");
+    g.innerHTML = "";
+    PART_PRESETS.forEach((p,i) => {
+        const el = document.createElement("button");
+        el.className = "btn btn-ghost text-left flex-col items-start gap-1 py-3";
+        el.style.textAlign = "left";
+        el.innerHTML = `
+            <div class="text-xs font-semibold uppercase tracking-wider">${p.name}</div>
+            <div class="text-[10px] text-gray-500 normal-case tracking-normal">${p.users} · ${p.L}×${p.W}×${p.T}mm</div>
+        `;
+        el.addEventListener("click", ()=> loadPreset(p));
+        g.appendChild(el);
+    });
+}
+function loadPreset(p) {
+    $("partName").value = p.name;
+    $("partL").value = p.L;
+    $("partW").value = p.W;
+    $("partT").value = p.T;
+    $("partFill").value = p.fill;
+    $("partLoss").value = p.loss;
+    $("partMach").value = p.mach;
+    $("partFinish").value = p.finish;
+    renderPart();
+}
+
+function costForMetal(metalKey, inputs) {
+    const m = METAL_DATA[metalKey];
+    const volCc = (inputs.L * inputs.W * inputs.T / 1000) * inputs.fill;   // mm3 → cc
+    const weightKg = (volCc * m.density) / 1000;                            // g/cc → kg
+    const grossKg = weightKg * (1 + inputs.loss/100);                       // buy more than net
+    const rawPerT = m.lme + inputs.prem + inputs.freight;
+    const landedPerT = rawPerT * (1 + inputs.duty/100);
+    const metalCost = (grossKg * landedPerT) / 1000;
+    const machCost  = grossKg * inputs.mach;
+    const finishCost = inputs.finish;
+    const scrapKg = grossKg - weightKg;
+    const scrapValue = (scrapKg * landedPerT * (inputs.scrapPct/100)) / 1000;
+    const subtotal = metalCost + machCost + finishCost - scrapValue;
+    const marginAmt = subtotal * (inputs.margin/100);
+    const piece = subtotal + marginAmt;
+    return {
+        weightKg, grossKg, metalCost, machCost, finishCost, scrapValue,
+        subtotal, marginAmt, piece
+    };
+}
+
+function renderPart() {
+    const inputs = {
+        L: parseFloat($("partL").value)||0,
+        W: parseFloat($("partW").value)||0,
+        T: parseFloat($("partT").value)||0,
+        fill: parseFloat($("partFill").value)||1,
+        loss: parseFloat($("partLoss").value)||0,
+        mach: parseFloat($("partMach").value)||0,
+        finish: parseFloat($("partFinish").value)||0,
+        scrapPct: parseFloat($("partScrap").value)||0,
+        margin: parseFloat($("partMargin").value)||0,
+        prem: parseFloat($("lcPrem").value)||0,
+        freight: parseFloat($("lcFreight").value)||0,
+        duty: parseFloat($("lcDuty").value)||0,
+    };
+    const qty = parseFloat($("partQty").value)||0;
+    const fx  = parseFloat($("lcFx").value)||84;
+
+    const c = costForMetal(currentMetal, inputs);
+    $("pcUsd").textContent = "$"+c.piece.toFixed(2);
+    $("pcInr").textContent = "₹"+(c.piece*fx).toFixed(0);
+    $("pcWeight").textContent = (c.weightKg*1000).toFixed(1)+" g  (gross "+(c.grossKg*1000).toFixed(1)+" g)";
+
+    const orderUsd = c.piece * qty;
+    const metalTotal = c.metalCost * qty;
+    $("orderUsd").textContent = "$"+Math.round(orderUsd).toLocaleString();
+    $("orderInr").textContent = "₹"+Math.round(orderUsd*fx).toLocaleString('en-IN');
+    $("orderMetal").textContent = "$"+Math.round(metalTotal).toLocaleString();
+
+    // Breakdown
+    const rows = [
+        ["Raw metal (landed)", c.metalCost],
+        ["Machining", c.machCost],
+        ["Finishing / plating", c.finishCost],
+        ["Scrap credit", -c.scrapValue],
+        ["Subtotal", c.subtotal],
+        ["Margin ("+inputs.margin.toFixed(1)+"%)", c.marginAmt],
+        ["<b>Piece price</b>", c.piece]
+    ];
+    $("breakdownBody").innerHTML = rows.map(([k,v])=>`
+        <tr>
+            <td>${k}</td>
+            <td class="num-tick">${v<0?"−$"+Math.abs(v).toFixed(2):"$"+v.toFixed(2)}</td>
+        </tr>
+    `).join("");
+
+    // Compare all 4 metals
+    const compareKeys = ["brass","copper","aluminum","zinc"];
+    const comps = compareKeys.map(k => ({ key:k, ...costForMetal(k, inputs) }));
+    const cheapestPiece = Math.min(...comps.map(c=>c.piece));
+    $("compareBody").innerHTML = comps.map(comp=>{
+        const m = METAL_DATA[comp.key];
+        const highlight = Math.abs(comp.piece - cheapestPiece) < 0.001;
+        return `
+            <tr style="${highlight?'background:rgba(22,163,74,0.08);':''}">
+                <td>
+                    <div class="flex items-center gap-2">
+                        <div class="metal-swatch ${m.swatchClass}" style="width:20px;height:20px;"></div>
+                        <div>
+                            <div class="font-semibold text-brown">${m.name}</div>
+                            <div class="text-[10px] text-gray-500 uppercase tracking-widest">${m.density.toFixed(2)} g/cc</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="num-tick">${(comp.weightKg*1000).toFixed(1)} g</td>
+                <td class="num-tick">$${comp.metalCost.toFixed(2)}</td>
+                <td class="num-tick font-semibold">$${comp.piece.toFixed(2)}</td>
+                <td class="num-tick">$${Math.round(comp.piece*qty).toLocaleString()}</td>
+            </tr>
+        `;
+    }).join("");
+}
+
+/* ------------------------------------------------------------------
+   CHAT — pattern-matched assistant, no network calls
+------------------------------------------------------------------ */
+function botReply(q) {
+    const s = smartScore();
+    const m = METAL_DATA[currentMetal];
+    const score = Math.round(s.composite);
+    const lab = labelFor(score);
+    const ql = q.toLowerCase();
+
+    let title = "Analysis", body = "";
+    const forMetal = ["copper","aluminum","zinc","brass"].find(k => ql.includes(k)) || currentMetal;
+    const mm = METAL_DATA[forMetal];
+
+    if (/(when|should).*(buy|purchase)/.test(ql) || ql.includes("buy now")) {
+        title = "Buy timing";
+        body = `
+            <div>Composite SmartBuy score for <b>${mm.name}</b> is <b>${score}/100</b> → <b>${lab.badge}</b>.</div>
+            <ul>
+                <li>Suggested tranche today: <b>${score>=75?"50%":score>=60?"40%":score>=40?"20%":score>=25?"10%":"0%"}</b> of quarterly need.</li>
+                <li>Resting bid: <b>3% below spot</b> ($${Math.round(mm.lme*0.97).toLocaleString()}/t) for the next tranche.</li>
+                <li>Re-evaluate in <b>${score>=60?"10 days":"7 days"}</b> or on a 2% price move.</li>
+            </ul>`;
+    } else if (/(going up|price up|increase|rise|forecast|predict|next month|next week)/.test(ql)) {
+        const w7  = (score-50)/10 * 1.2;
+        const w30 = (score-50)/10 * 4.0;
+        title = "Price forecast";
+        body = `
+            <div>Directional bias for <b>${mm.name}</b> is <b>${score>55?"upward":score<45?"downward":"flat"}</b>.</div>
+            <ul>
+                <li>7-day: <b>${(w7>=0?"+":"")+w7.toFixed(1)}%</b> → $${Math.round(mm.lme*(1+w7/100)).toLocaleString()}/t</li>
+                <li>30-day: <b>${(w30>=0?"+":"")+w30.toFixed(1)}%</b> → $${Math.round(mm.lme*(1+w30/100)).toLocaleString()}/t</li>
+                <li>Key driver right now: <b>${topDriver(s)}</b>.</li>
+            </ul>`;
+    } else if (/(hedge|hedging|lock)/.test(ql)) {
+        title = "Hedging plan";
+        body = `
+            <ul>
+                <li>Buy LME 3M future on 100% of any fixed-price customer PO past 60 days.</li>
+                <li>Consider a 5%-out-of-the-money call if score &lt; 40 &mdash; cheap insurance in a bearish tape.</li>
+                <li>Match INR forward cover to the same tenor as the LME leg.</li>
+            </ul>`;
+    } else if (/(cheap|cheapest|which metal|compare)/.test(ql)) {
+        const inputs = {
+            L: parseFloat($("partL").value)||300, W: parseFloat($("partW").value)||300, T: parseFloat($("partT").value)||2,
+            fill: parseFloat($("partFill").value)||0.85, loss:parseFloat($("partLoss").value)||18,
+            mach:parseFloat($("partMach").value)||4.5, finish:parseFloat($("partFinish").value)||0.85,
+            scrapPct: parseFloat($("partScrap").value)||60, margin: parseFloat($("partMargin").value)||22,
+            prem: parseFloat($("lcPrem").value)||0, freight: parseFloat($("lcFreight").value)||0, duty: parseFloat($("lcDuty").value)||0
+        };
+        const options = ["brass","copper","aluminum","zinc"].map(k=>({k, ...costForMetal(k,inputs)}));
+        options.sort((a,b)=>a.piece-b.piece);
+        title = "Metal comparison for current part";
+        body = `
+            <ul>
+                ${options.map((o,i)=>`<li>${i+1}. <b>${METAL_DATA[o.k].name}</b> &mdash; $${o.piece.toFixed(2)}/pc${i===0?" ← cheapest":""}</li>`).join("")}
+            </ul>
+            <div class="mt-2 text-xs text-gray-500">Cheapest isn't always right &mdash; brass is the default for electrical / fluid contact for a reason. Compare on total cost of ownership.</div>`;
+    } else if (/(rsi|indicator|best indicator|signal)/.test(ql)) {
+        title = "Best indicator";
+        body = `
+            <div>No single indicator wins everywhere. The <b>SmartBuy Composite</b> currently reads <b>${score}/100</b>.</div>
+            <ul>
+                <li>Strongest bullish input right now: <b>${topDriver(s)}</b>.</li>
+                <li>Biggest headwind: <b>${topDrag(s)}</b>.</li>
+                <li>If you want one number to watch daily, watch the <b>50 vs 200-day MA spread</b> &mdash; it flips regime.</li>
+            </ul>`;
+    } else if (/(part|component|electrolyzer|bipolar|bloom|nel|sunfire)/.test(ql)) {
+        title = "Component note";
+        body = `
+            <div>All 8 electrolyzer / fuel-cell presets are ready in the Parts calculator below.</div>
+            <ul>
+                <li>Bipolar plates: brass is fine for prototypes; production PEM typically wants gold-flashed brass or Ti.</li>
+                <li>Bus bars and terminals: copper wins on conductivity, brass wins on machinability &amp; cost.</li>
+                <li>Frame / gasket rings: brass is the workhorse &mdash; corrosion-safe with KOH at moderate temps.</li>
+            </ul>`;
+    } else {
+        title = "How I can help";
+        body = `
+            <ul>
+                <li>Ask "should I buy copper now?" &mdash; I'll return a tranche plan.</li>
+                <li>Ask "will zinc go up next month?" &mdash; I'll give a directional forecast.</li>
+                <li>Ask "which metal is cheapest for this part?" &mdash; I'll compare all four for your current geometry.</li>
+                <li>Ask "how do I hedge?" &mdash; I'll lay out an LME + FX plan.</li>
+            </ul>`;
+    }
+
+    return `<div class="msg-bot"><div class="label">${title}</div>${body}</div>`;
+}
+function topDriver(s) {
+    const arr = [["RSI",s.sRsi],["Trend",s.sMa],["Stocks",s.sSt],["Spread",s.sSp],["USD",s.sDxy],["PMI",s.sPmi]];
+    arr.sort((a,b)=>b[1]-a[1]);
+    return arr[0][0];
+}
+function topDrag(s) {
+    const arr = [["RSI",s.sRsi],["Trend",s.sMa],["Stocks",s.sSt],["Spread",s.sSp],["USD",s.sDxy],["PMI",s.sPmi]];
+    arr.sort((a,b)=>a[1]-b[1]);
+    return arr[0][0];
+}
+
+function chatSend() {
+    const inp = $("chatInput");
+    const q = inp.value.trim();
+    if (!q) return;
+    const box = $("chatBox");
+    box.insertAdjacentHTML("beforeend", `<div class="flex justify-end"><div class="msg-user">${escapeHtml(q)}</div></div>`);
+    box.insertAdjacentHTML("beforeend", `<div class="flex justify-start">${botReply(q)}</div>`);
+    inp.value = "";
+    box.scrollTop = box.scrollHeight;
+}
+function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ------------------------------------------------------------------
+   PLACEHOLDER for live data hookup
+------------------------------------------------------------------ */
+async function fetchLive() {
+    // Wire this to LME / Metals-API / TradingEconomics.
+    // For each metal, update METAL_DATA[key].lme, .change24h, .rsi, .stocks etc.
+    // Example:
+    //   const r = await fetch("https://api.metals.dev/v1/latest?...").then(r=>r.json());
+    //   METAL_DATA.copper.lme = r.metals.copper * 1000;
+    //   ...
+    // Then call refreshAll();
+}
+
+/* ------------------------------------------------------------------
+   REFRESH
+------------------------------------------------------------------ */
+function refreshAll() {
+    renderChips();
+    renderDashboard();
+    seedLanded();
+    renderAssistant();
+    renderPart();
+}
+
+/* ------------------------------------------------------------------
+   BOOT
+------------------------------------------------------------------ */
+window.addEventListener("DOMContentLoaded", () => {
+    ["rsi","ma","stocks","dxy","spread","pmi"].forEach(id => {
+        $(id).addEventListener("input", renderAssistant);
+    });
+    ["partL","partW","partT","partFill","partLoss","partMach","partFinish","partScrap","partMargin","partQty","lcFx","lcPrem","lcFreight","lcDuty"].forEach(id => {
+        $(id).addEventListener("input", () => { renderLanded(); renderPart(); });
+    });
+    $("chatSend").addEventListener("click", chatSend);
+    $("chatInput").addEventListener("keydown", (e)=>{ if(e.key==="Enter") chatSend(); });
+
+    // Seed welcome message
+    $("chatBox").insertAdjacentHTML("beforeend", `
+        <div class="flex justify-start">
+            <div class="msg-bot">
+                <div class="label">Assistant</div>
+                Hi &mdash; I'm the LME buying assistant. Ask <b>"should I buy copper now?"</b>, <b>"will zinc go up next month?"</b>, or <b>"which metal is cheapest for this part?"</b>.
+            </div>
+        </div>
+    `);
+
+    renderPresets();
+    refreshAll();
+});
+</script>
+</body>
+</html>
