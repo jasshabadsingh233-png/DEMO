@@ -160,6 +160,49 @@
             padding: 12px 14px; border-radius: 12px;
             background: #FFFDF9; border: 1px solid rgba(75,54,33,0.10);
         }
+
+        /* Category chips + preset cards */
+        .cat-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 14px; border-radius: 999px; font-size: 11px;
+            font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase;
+            border: 1px solid rgba(75,54,33,0.14); background: #FFFDF9; color: var(--deep-brown);
+            transition: all .15s ease; cursor: pointer;
+        }
+        .cat-chip:hover { border-color: rgba(75,54,33,0.35); }
+        .cat-chip.active { background: var(--deep-brown); color: #F5F5DC; border-color: var(--deep-brown); }
+        .cat-chip .dot { width: 8px; height: 8px; border-radius: 999px; }
+        .cat-sanitary .dot { background: #0EA5A4; }
+        .cat-electrolyzer .dot { background: #16A34A; }
+        .cat-electrical .dot { background: #D97706; }
+        .cat-automotive .dot { background: #DC2626; }
+        .cat-fasteners .dot { background: #7A431F; }
+
+        .preset-card {
+            display: flex; flex-direction: column; align-items: stretch;
+            padding: 12px 14px; border-radius: 12px; text-align: left;
+            border: 1px solid rgba(75,54,33,0.10); background: #FFFDF9;
+            transition: all .15s ease; cursor: pointer;
+            border-left-width: 3px;
+        }
+        .preset-card:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(75,54,33,0.10); border-color: rgba(75,54,33,0.30); }
+        .preset-card.left-sanitary     { border-left-color: #0EA5A4; }
+        .preset-card.left-electrolyzer { border-left-color: #16A34A; }
+        .preset-card.left-electrical   { border-left-color: #D97706; }
+        .preset-card.left-automotive   { border-left-color: #DC2626; }
+        .preset-card.left-fasteners    { border-left-color: #7A431F; }
+        .preset-card .cat-label {
+            font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+            font-weight: 700; margin-bottom: 4px;
+        }
+        .cat-txt-sanitary     { color: #0EA5A4; }
+        .cat-txt-electrolyzer { color: #16A34A; }
+        .cat-txt-electrical   { color: #D97706; }
+        .cat-txt-automotive   { color: #DC2626; }
+        .cat-txt-fasteners    { color: #7A431F; }
+        .preset-card .name { font-size: 13px; font-weight: 700; color: var(--deep-brown); line-height: 1.25; }
+        .preset-card .dims { font-size: 10px; color: #6b5a45; letter-spacing: 0.06em; margin-top: 4px; }
+        .preset-card .brands { font-size: 10.5px; color: #4B3621; margin-top: 6px; font-style: italic; opacity: 0.85; }
         .pill-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: #6b5a45; font-weight: 700; }
         .pill-val { font-size: 15px; font-weight: 700; color: var(--deep-brown); }
 
@@ -433,23 +476,66 @@
     </div>
 </section>
 
+<!-- Industries Served strip -->
+<section class="max-w-7xl mx-auto px-6 md:px-10 mt-12">
+    <div class="glass rounded-2xl p-6 md:p-7">
+        <div class="section-eyebrow mb-3">Industries Served · End-customers in the Ranjit book</div>
+        <div class="grid md:grid-cols-5 gap-4">
+            <div>
+                <div class="cat-label cat-txt-sanitary" style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;font-weight:700;">Sanitary</div>
+                <div class="text-xs text-brown mt-1 leading-relaxed">Villeroy &amp; Boch · Grohe · Hansgrohe · Kohler · Roca · Duravit · Geberit · Toto</div>
+            </div>
+            <div>
+                <div class="cat-label cat-txt-electrolyzer" style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;font-weight:700;">Electrolyzer / H₂</div>
+                <div class="text-xs text-brown mt-1 leading-relaxed">Nel Hydrogen · Bloom Energy · Sunfire · ITM Power</div>
+            </div>
+            <div>
+                <div class="cat-label cat-txt-electrical" style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;font-weight:700;">Electrical</div>
+                <div class="text-xs text-brown mt-1 leading-relaxed">Legrand · Schneider Electric · ABB · Siemens · Havells</div>
+            </div>
+            <div>
+                <div class="cat-label cat-txt-automotive" style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;font-weight:700;">Automotive</div>
+                <div class="text-xs text-brown mt-1 leading-relaxed">Bosch · Valeo · Denso · TE Connectivity</div>
+            </div>
+            <div>
+                <div class="cat-label cat-txt-fasteners" style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;font-weight:700;">Fasteners</div>
+                <div class="text-xs text-brown mt-1 leading-relaxed">Ranjit's own standard line — screws, nuts, rivets, washers</div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- Component / Parts Calculator -->
-<section id="parts" class="max-w-7xl mx-auto px-6 md:px-10 mt-12">
+<section id="parts" class="max-w-7xl mx-auto px-6 md:px-10 mt-6">
     <div class="glass rounded-2xl p-6 md:p-8">
         <div class="flex flex-wrap items-end justify-between gap-3">
             <div>
                 <div class="section-eyebrow">Component Cost Engine</div>
-                <div class="card-title mt-1">Electrolyzer / Fuel-Cell Parts &mdash; NEL, Bloom, Sunfire style</div>
+                <div class="card-title mt-1">Ranjit Industries Catalogue &mdash; live pricing across every line</div>
                 <p class="text-xs text-gray-500 mt-1 max-w-2xl">
-                    Pick a part used by alkaline / PEM / SOEC stacks (or start from a blank block), choose the material,
-                    tune finish and margin. The engine handles density, machining loss, plating and delivered cost in one pass.
+                    Every part below is a real component from Ranjit's catalogue, tagged with the actual end-customer:
+                    <b>Sanitary</b> (Villeroy &amp; Boch, Grohe, Hansgrohe, Kohler, Roca, Duravit, Geberit, Toto) ·
+                    <b>Electrolyzer &amp; Fuel-Cell</b> (Nel, Bloom Energy, Sunfire, ITM Power) ·
+                    <b>Electrical</b> (Legrand, Schneider, ABB, Siemens, Havells) ·
+                    <b>Automotive</b> (Bosch, Valeo, Denso, TE Connectivity) ·
+                    <b>Fasteners</b> (Ranjit standard line).
                 </p>
             </div>
             <div class="text-[11px] text-gray-500 uppercase tracking-widest">Densities auto-applied · brass CZ121, 8.47 g/cc</div>
         </div>
 
-        <!-- Preset row -->
-        <div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-2" id="presetGrid"></div>
+        <!-- Category filter -->
+        <div class="mt-5 flex flex-wrap gap-2" id="categoryFilter">
+            <button class="cat-chip active" data-cat="all">All parts</button>
+            <button class="cat-chip cat-sanitary" data-cat="sanitary"><span class="dot"></span>Sanitary</button>
+            <button class="cat-chip cat-electrolyzer" data-cat="electrolyzer"><span class="dot"></span>Electrolyzer / Fuel Cell</button>
+            <button class="cat-chip cat-electrical" data-cat="electrical"><span class="dot"></span>Electrical</button>
+            <button class="cat-chip cat-automotive" data-cat="automotive"><span class="dot"></span>Automotive</button>
+            <button class="cat-chip cat-fasteners" data-cat="fasteners"><span class="dot"></span>Fasteners</button>
+        </div>
+
+        <!-- Preset grid -->
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5" id="presetGrid"></div>
 
         <div class="grid lg:grid-cols-3 gap-6 mt-6">
             <!-- Left: inputs -->
@@ -686,19 +772,99 @@ METAL_DATA.brass.history = METAL_DATA.copper.history.map((c,i)=> Math.round(0.6*
 METAL_DATA.brass.lme = Math.round(0.6*METAL_DATA.copper.lme + 0.4*METAL_DATA.zinc.lme);
 
 /* ------------------------------------------------------------------
-   COMPONENT PRESETS — real geometries used by NEL, Bloom, Sunfire style
-   electrolyzer / fuel-cell stacks. Weights are estimates.
+   COMPONENT PRESETS — full Ranjit Industries catalogue, tagged with
+   real end-customer brands per category.
 ------------------------------------------------------------------ */
 const PART_PRESETS = [
-    { name: "Bipolar Plate (PEM 5 kW)",     L:300, W:300, T:2,   fill:0.85, loss:18, mach:4.5, finish:0.85, users:"Nel, Bloom" },
-    { name: "End Plate (Alkaline 10 kW)",   L:400, W:400, T:30,  fill:1.00, loss:12, mach:3.8, finish:1.20, users:"Nel Hydrogen" },
-    { name: "Current Collector Mesh",        L:300, W:300, T:1,   fill:0.55, loss:8,  mach:6.0, finish:0.45, users:"Bloom Energy" },
-    { name: "Bus Bar (Stack Interconnect)",  L:400, W:50,  T:10,  fill:1.00, loss:6,  mach:2.8, finish:0.60, users:"Nel, Sunfire" },
-    { name: "Manifold H₂ Outlet Fitting",    L:60,  W:40,  T:35,  fill:0.70, loss:22, mach:5.5, finish:1.10, users:"Sunfire SOEC" },
-    { name: "Cell Frame Gasket Ring",        L:120, W:120, T:6,   fill:0.30, loss:15, mach:4.2, finish:0.55, users:"Bloom SOFC" },
-    { name: "Terminal Post (M12 threaded)",  L:60,  W:20,  T:20,  fill:1.00, loss:20, mach:5.0, finish:0.75, users:"Nel, Sunfire" },
-    { name: "Coolant Flow Insert",           L:280, W:280, T:3,   fill:0.55, loss:14, mach:4.8, finish:0.80, users:"Bloom Energy" }
+    // === SANITARY — Villeroy & Boch, Grohe, Hansgrohe, Kohler, Roca, Duravit, Geberit, Toto ===
+    { category:"sanitary", name:"Conus Adaptor M15×1 (Shower Hose)", L:20, W:20, T:22, fill:0.65, loss:22, mach:5.2, finish:0.65,
+      users:"Villeroy & Boch · Grohe · Hansgrohe" },
+    { category:"sanitary", name:"Knurled Nut G½\" (Flexible Hose)", L:24, W:24, T:12, fill:0.75, loss:18, mach:4.8, finish:0.55,
+      users:"Villeroy & Boch · Kohler · Toto" },
+    { category:"sanitary", name:"Flexible Shower Hose End Fitting", L:22, W:22, T:35, fill:0.55, loss:24, mach:5.5, finish:0.75,
+      users:"Hansgrohe · Grohe · Villeroy & Boch" },
+    { category:"sanitary", name:"Faucet Cartridge Housing Ø35", L:38, W:38, T:42, fill:0.62, loss:26, mach:6.0, finish:1.10,
+      users:"Roca · Duravit · Villeroy & Boch" },
+    { category:"sanitary", name:"Angle Valve Body ½\"×⅜\"", L:55, W:55, T:32, fill:0.58, loss:28, mach:6.5, finish:1.35,
+      users:"Geberit · Grohe · Villeroy & Boch" },
+    { category:"sanitary", name:"Aerator Housing M24×1", L:26, W:26, T:12, fill:0.68, loss:20, mach:5.0, finish:0.60,
+      users:"Toto · Hansgrohe · Villeroy & Boch" },
+    { category:"sanitary", name:"Diverter Valve Insert", L:22, W:22, T:42, fill:0.60, loss:24, mach:5.6, finish:0.85,
+      users:"Villeroy & Boch · Kohler · Roca" },
+    { category:"sanitary", name:"Pop-up Waste Actuator Rod", L:6, W:6, T:200, fill:1.00, loss:12, mach:3.5, finish:0.45,
+      users:"Villeroy & Boch · Duravit" },
+    { category:"sanitary", name:"Basin Mixer Spout Insert", L:18, W:18, T:70, fill:0.45, loss:22, mach:5.4, finish:0.90,
+      users:"Grohe · Hansgrohe · Villeroy & Boch" },
+    { category:"sanitary", name:"Thermostatic Cartridge Sleeve", L:32, W:32, T:55, fill:0.55, loss:26, mach:6.2, finish:1.15,
+      users:"Hansgrohe · Grohe · Roca" },
+
+    // === ELECTROLYZER / FUEL CELL — Nel Hydrogen, Bloom Energy, Sunfire, ITM Power ===
+    { category:"electrolyzer", name:"Bipolar Plate — PEM 5 kW", L:300, W:300, T:2, fill:0.85, loss:18, mach:4.5, finish:0.85,
+      users:"Nel Hydrogen · Bloom Energy" },
+    { category:"electrolyzer", name:"End Plate — Alkaline 10 kW Stack", L:400, W:400, T:30, fill:1.00, loss:12, mach:3.8, finish:1.20,
+      users:"Nel Hydrogen · ITM Power" },
+    { category:"electrolyzer", name:"Current Collector Mesh", L:300, W:300, T:1, fill:0.55, loss:8, mach:6.0, finish:0.45,
+      users:"Bloom Energy · Sunfire" },
+    { category:"electrolyzer", name:"Stack Bus Bar Interconnect", L:400, W:50, T:10, fill:1.00, loss:6, mach:2.8, finish:0.60,
+      users:"Nel Hydrogen · Sunfire" },
+    { category:"electrolyzer", name:"H₂ Outlet Manifold Fitting", L:60, W:40, T:35, fill:0.70, loss:22, mach:5.5, finish:1.10,
+      users:"Sunfire SOEC · Nel Hydrogen" },
+    { category:"electrolyzer", name:"Cell Frame Gasket Ring", L:120, W:120, T:6, fill:0.30, loss:15, mach:4.2, finish:0.55,
+      users:"Bloom Energy SOFC" },
+    { category:"electrolyzer", name:"Terminal Post M12 (Stack)", L:20, W:20, T:60, fill:1.00, loss:20, mach:5.0, finish:0.75,
+      users:"Nel · Sunfire · Bloom Energy" },
+    { category:"electrolyzer", name:"KOH Coolant Flow Insert", L:280, W:280, T:3, fill:0.55, loss:14, mach:4.8, finish:0.80,
+      users:"Bloom Energy · Nel Hydrogen" },
+    { category:"electrolyzer", name:"Compression Gland ⅜\" (SOEC)", L:24, W:24, T:48, fill:0.62, loss:24, mach:5.6, finish:0.95,
+      users:"Sunfire · ITM Power" },
+    { category:"electrolyzer", name:"Anode Feed-through Bushing", L:30, W:30, T:40, fill:0.60, loss:20, mach:5.2, finish:0.90,
+      users:"Nel Hydrogen · Bloom Energy" },
+
+    // === ELECTRICAL — Legrand, Schneider Electric, ABB, Siemens, Havells ===
+    { category:"electrical", name:"Neutral Link 16-Way", L:100, W:15, T:8, fill:1.00, loss:14, mach:3.2, finish:0.45,
+      users:"Legrand · Havells · Schneider" },
+    { category:"electrical", name:"Earth Bar 10-Way", L:150, W:20, T:8, fill:1.00, loss:12, mach:3.0, finish:0.50,
+      users:"Schneider Electric · ABB" },
+    { category:"electrical", name:"Terminal Bar (Switchgear)", L:80, W:15, T:6, fill:1.00, loss:10, mach:3.5, finish:0.40,
+      users:"Siemens · ABB · Schneider" },
+    { category:"electrical", name:"BS1363 UK Plug Pin (Live)", L:7, W:4, T:22, fill:1.00, loss:16, mach:4.5, finish:0.35,
+      users:"Legrand · Havells" },
+    { category:"electrical", name:"Socket Contact Insert", L:15, W:10, T:14, fill:0.62, loss:22, mach:4.8, finish:0.45,
+      users:"Legrand · Schneider" },
+    { category:"electrical", name:"Screw Terminal Insert", L:8, W:8, T:16, fill:0.75, loss:18, mach:4.0, finish:0.30,
+      users:"ABB · Schneider · Siemens" },
+    { category:"electrical", name:"MCB Contact Rivet", L:5, W:5, T:9, fill:0.85, loss:14, mach:3.6, finish:0.22,
+      users:"Legrand · Havells · Siemens" },
+
+    // === AUTOMOTIVE — Bosch, Valeo, Denso, TE Connectivity ===
+    { category:"automotive", name:"Precision Turn-Mill Bushing", L:20, W:20, T:30, fill:0.68, loss:22, mach:5.2, finish:0.75,
+      users:"Bosch · Denso" },
+    { category:"automotive", name:"Fuel Injector Body Sleeve", L:14, W:14, T:45, fill:0.55, loss:26, mach:5.8, finish:0.90,
+      users:"Bosch · Denso" },
+    { category:"automotive", name:"O₂ Sensor Housing", L:22, W:22, T:38, fill:0.62, loss:24, mach:5.5, finish:0.85,
+      users:"Bosch · Valeo · Denso" },
+    { category:"automotive", name:"Brake Bleed Nipple", L:8, W:8, T:32, fill:0.72, loss:20, mach:4.8, finish:0.55,
+      users:"Bosch · TE Connectivity" },
+    { category:"automotive", name:"ABS Sensor Housing", L:18, W:18, T:35, fill:0.60, loss:22, mach:5.2, finish:0.75,
+      users:"Bosch · Valeo" },
+    { category:"automotive", name:"Automotive Connector Pin", L:3, W:3, T:22, fill:1.00, loss:14, mach:4.2, finish:0.28,
+      users:"TE Connectivity · Bosch" },
+
+    // === FASTENERS — Ranjit standard line ===
+    { category:"fasteners", name:"Brass Hex Screw M6×20", L:9, W:9, T:20, fill:0.72, loss:15, mach:3.5, finish:0.20, users:"Ranjit standard line" },
+    { category:"fasteners", name:"Brass Hex Nut M8", L:13, W:13, T:6.5, fill:0.68, loss:12, mach:3.0, finish:0.18, users:"Ranjit standard line" },
+    { category:"fasteners", name:"Hollow Rivet 3×8mm", L:3, W:3, T:8, fill:0.55, loss:10, mach:2.8, finish:0.15, users:"Ranjit standard line" },
+    { category:"fasteners", name:"Stamped Washer M6", L:12, W:12, T:1.2, fill:0.75, loss:8, mach:2.5, finish:0.12, users:"Ranjit standard line" }
 ];
+
+const CATEGORY_META = {
+    sanitary:     { label:"Sanitary" },
+    electrolyzer: { label:"Electrolyzer" },
+    electrical:   { label:"Electrical" },
+    automotive:   { label:"Automotive" },
+    fasteners:    { label:"Fastener" }
+};
+let currentCategory = "all";
 
 /* ------------------------------------------------------------------
    STATE
@@ -957,16 +1123,32 @@ function actionPlanFor(score, s) {
 function renderPresets() {
     const g = $("presetGrid");
     g.innerHTML = "";
-    PART_PRESETS.forEach((p,i) => {
+    const visible = PART_PRESETS.filter(p => currentCategory === "all" || p.category === currentCategory);
+    visible.forEach((p) => {
+        const meta = CATEGORY_META[p.category];
         const el = document.createElement("button");
-        el.className = "btn btn-ghost text-left flex-col items-start gap-1 py-3";
-        el.style.textAlign = "left";
+        el.className = `preset-card left-${p.category}`;
         el.innerHTML = `
-            <div class="text-xs font-semibold uppercase tracking-wider">${p.name}</div>
-            <div class="text-[10px] text-gray-500 normal-case tracking-normal">${p.users} · ${p.L}×${p.W}×${p.T}mm</div>
+            <div class="cat-label cat-txt-${p.category}">${meta.label}</div>
+            <div class="name">${p.name}</div>
+            <div class="dims">${p.L}×${p.W}×${p.T} mm · loss ${p.loss}%</div>
+            <div class="brands">${p.users}</div>
         `;
         el.addEventListener("click", ()=> loadPreset(p));
         g.appendChild(el);
+    });
+    if (!visible.length) {
+        g.innerHTML = `<div class="text-xs text-gray-500 italic p-4">No parts in this category yet.</div>`;
+    }
+}
+function bindCategoryChips() {
+    document.querySelectorAll("#categoryFilter .cat-chip").forEach(chip => {
+        chip.addEventListener("click", () => {
+            document.querySelectorAll("#categoryFilter .cat-chip").forEach(c => c.classList.remove("active"));
+            chip.classList.add("active");
+            currentCategory = chip.dataset.cat;
+            renderPresets();
+        });
     });
 }
 function loadPreset(p) {
@@ -1142,14 +1324,15 @@ function botReply(q) {
                 <li>Biggest headwind: <b>${topDrag(s)}</b>.</li>
                 <li>If you want one number to watch daily, watch the <b>50 vs 200-day MA spread</b> &mdash; it flips regime.</li>
             </ul>`;
-    } else if (/(part|component|electrolyzer|bipolar|bloom|nel|sunfire)/.test(ql)) {
+    } else if (/(part|component|electrolyzer|bipolar|bloom|nel|sunfire|sanitary|villeroy|grohe|hansgrohe|kohler|roca|duravit|geberit|toto|shower|faucet|valve|aerator|electrical|legrand|schneider|abb|siemens|havells|automotive|bosch|valeo|denso)/.test(ql)) {
         title = "Component note";
         body = `
-            <div>All 8 electrolyzer / fuel-cell presets are ready in the Parts calculator below.</div>
+            <div>The full Ranjit catalogue is loaded in the Parts calculator below — filter by category to narrow it down.</div>
             <ul>
-                <li>Bipolar plates: brass is fine for prototypes; production PEM typically wants gold-flashed brass or Ti.</li>
-                <li>Bus bars and terminals: copper wins on conductivity, brass wins on machinability &amp; cost.</li>
-                <li>Frame / gasket rings: brass is the workhorse &mdash; corrosion-safe with KOH at moderate temps.</li>
+                <li><b>Sanitary (Villeroy & Boch, Grohe, Hansgrohe, Kohler, Roca, Duravit, Geberit, Toto):</b> 10 presets covering conus adaptors, knurled nuts, shower hose fittings, faucet cartridges, angle valves, aerators, diverters, thermostatic sleeves — all in free-cutting or lead-free brass.</li>
+                <li><b>Electrolyzer (Nel, Bloom Energy, Sunfire, ITM Power):</b> bipolar plates, end plates, current collectors, bus bars, gaskets, feed-through bushings. Brass is fine for prototypes; production PEM typically wants gold-flashed brass or Ti.</li>
+                <li><b>Electrical (Legrand, Schneider, ABB, Siemens, Havells):</b> neutral links, earth bars, plug pins, socket contacts, MCB rivets — all pure copper-family brass.</li>
+                <li><b>Automotive (Bosch, Valeo, Denso, TE Connectivity):</b> bushings, injector sleeves, sensor housings, ABS housings, connector pins.</li>
             </ul>`;
     } else {
         title = "How I can help";
@@ -1235,6 +1418,7 @@ window.addEventListener("DOMContentLoaded", () => {
     `);
 
     renderPresets();
+    bindCategoryChips();
     refreshAll();
 });
 </script>
