@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SAML — Volturn Sensor Dashboard</title>
+<style>
+  :root {
+    --bg: #000000;
+    --panel: #0d0d0d;
+    --border: #1f1f1f;
+    --text: #f2f2f2;
+    --muted: #8a8a8a;
+    --ok: #22c55e;
+    --warn: #f5a524;
+    --danger: #ff1f2d;
+    --danger-glow: rgba(255, 31, 45, 0.35);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeSpeed;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--border);
+    background: #050505;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    contain: layout style;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark {
+    width: 32px; height: 32px; border-radius: 6px;
+    background: linear-gradient(135deg, #ff1f2d, #7a0e15);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 14px; color: #fff;
+  }
+  .brand-name { font-weight: 700; letter-spacing: 0.5px; }
+  .brand-sub  { color: var(--muted); font-size: 12px; }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--muted);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+
+  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+
+  .page-title { font-size: 24px; margin: 0 0 4px 0; }
+  .page-sub { color: var(--muted); margin: 0 0 24px 0; font-size: 14px; }
+
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .summary-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    contain: layout style paint;
+  }
+  .summary-label {
+    font-size: 12px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  .summary-value { font-size: 28px; font-weight: 700; margin-top: 6px; }
+  .summary-value.danger { color: var(--danger); }
+  .summary-value.warn { color: var(--warn); }
+  .summary-value.ok { color: var(--ok); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    content-visibility: auto;
+    contain-intrinsic-size: 400px;
+  }
+  .card {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+    contain: layout style paint;
+  }
+  .card:hover {
+    transform: translateY(-2px);
+    border-color: #2c2c2c;
+  }
+  .card.danger { border-color: var(--danger); }
+  /* Composited opacity pulse via pseudo-element — no shadow repaint */
+  .card.danger::after {
+    content: "";
+    position: absolute; inset: -1px;
+    border-radius: 12px;
+    box-shadow: 0 0 20px var(--danger-glow);
+    pointer-events: none;
+    animation: pulse 2s ease-in-out infinite;
+    will-change: opacity;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50%      { opacity: 1;   }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .card.danger::after,
+    .status-banner.danger::after { animation: none; opacity: 0.8; }
+    .card { transition: none; }
+  }
+  .card-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 12px;
+  }
+  .card-title { font-weight: 700; font-size: 16px; }
+  .card-loc   { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .badge {
+    padding: 4px 10px; border-radius: 999px;
+    font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.6px;
+  }
+  .badge.ok     { background: rgba(34,197,94,0.15);  color: var(--ok); }
+  .badge.warn   { background: rgba(245,165,36,0.15); color: var(--warn); }
+  .badge.danger { background: var(--danger); color: #fff; }
+
+  .metrics {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px;
+  }
+  .metric-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+  .metric-value { font-size: 18px; font-weight: 600; margin-top: 2px; }
+
+  .hidden { display: none !important; }
+  .back-btn {
+    background: transparent; color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 8px 14px; border-radius: 8px;
+    cursor: pointer; font-size: 13px; margin-bottom: 24px;
+  }
+  .back-btn:hover { color: var(--text); border-color: #333; }
+
+  .detail-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 16px; margin-bottom: 24px; flex-wrap: wrap;
+  }
+  .detail-title { font-size: 28px; margin: 0; }
+  .detail-loc   { color: var(--muted); margin-top: 4px; }
+
+  .status-banner {
+    position: relative;
+    padding: 20px 24px; border-radius: 12px; margin-bottom: 24px;
+    display: flex; align-items: center; gap: 16px;
+    contain: layout style paint;
+  }
+  .status-banner.ok     { background: rgba(34,197,94,0.08);  border: 1px solid rgba(34,197,94,0.3); }
+  .status-banner.warn   { background: rgba(245,165,36,0.08); border: 1px solid rgba(245,165,36,0.3); }
+  .status-banner.danger { background: rgba(255,31,45,0.12);  border: 1px solid var(--danger); }
+  .status-banner.danger::after {
+    content: "";
+    position: absolute; inset: -1px;
+    border-radius: 12px;
+    box-shadow: 0 0 24px var(--danger-glow);
+    pointer-events: none;
+    animation: pulse 2s ease-in-out infinite;
+    will-change: opacity;
+  }
+  .status-icon {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 800; flex-shrink: 0;
+  }
+  .status-icon.ok     { background: var(--ok);     color: #000; }
+  .status-icon.warn   { background: var(--warn);   color: #000; }
+  .status-icon.danger { background: var(--danger); color: #fff; }
+  .status-text-main { font-size: 18px; font-weight: 700; }
+  .status-text-sub  { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+  .detail-grid {
+    display: grid; grid-template-columns: 2fr 1fr; gap: 20px;
+  }
+  @media (max-width: 800px) { .detail-grid { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    contain: layout style;
+  }
+  .panel h3 {
+    margin: 0 0 16px 0;
+    font-size: 14px; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--muted);
+  }
+  .metric-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .big-metric-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+  .big-metric-value { font-size: 32px; font-weight: 700; margin-top: 4px; }
+  .big-metric-value.danger { color: var(--danger); }
+  .big-metric-value.warn { color: var(--warn); }
+  .big-metric-unit { color: var(--muted); font-size: 16px; font-weight: 400; margin-left: 4px; }
+
+  .maintenance-list { list-style: none; padding: 0; margin: 0; }
+  .maintenance-list li {
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; gap: 12px; font-size: 14px;
+  }
+  .maintenance-list li:last-child { border-bottom: none; }
+  .maint-label { color: var(--muted); }
+
+  .action-btn {
+    display: inline-block;
+    background: var(--danger); color: #fff; border: none;
+    padding: 10px 18px; border-radius: 8px;
+    font-weight: 600; cursor: pointer; font-size: 13px; margin-top: 12px;
+  }
+  .action-btn.neutral { background: #1f1f1f; color: var(--text); }
+  .action-btn:hover { opacity: 0.9; }
+
+  footer {
+    text-align: center; color: var(--muted); font-size: 12px;
+    padding: 24px; border-top: 1px solid var(--border); margin-top: 40px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">S</div>
+    <div>
+      <div class="brand-name">SAML &middot; Volturn</div>
+      <div class="brand-sub">Self-Powered Smart Fitting Network</div>
+    </div>
+  </div>
+  <div class="status-pill">
+    <span class="dot"></span>
+    <span id="live-text">Live &middot; updated just now</span>
+  </div>
+</header>
+
+<main>
+  <section id="home-view">
+    <h1 class="page-title">Sensor Overview</h1>
+    <p class="page-sub">Click any fitting to view live status, pressure, temperature, and maintenance.</p>
+
+    <div class="summary">
+      <div class="summary-card">
+        <div class="summary-label">Total Units</div>
+        <div class="summary-value" id="sum-total">0</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Healthy</div>
+        <div class="summary-value ok" id="sum-ok">0</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Maintenance</div>
+        <div class="summary-value warn" id="sum-warn">0</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Leaks Detected</div>
+        <div class="summary-value danger" id="sum-danger">0</div>
+      </div>
+    </div>
+
+    <div class="grid" id="card-grid"></div>
+  </section>
+
+  <section id="detail-view" class="hidden">
+    <button class="back-btn" type="button" id="back-btn">&larr; Back to overview</button>
+    <div id="detail-content"></div>
+  </section>
+</main>
+
+<footer>Solar Advance Machinery Limited &middot; Volturn Prototype Dashboard &middot; Demo Data</footer>
+
+<script>
+  const sensors = [
+    { id:"VLT-001", name:"Volturn V1", location:"Semiconductor Fab · Coolant Loop A",
+      pressure:42.1, pressureUnit:"psi", pressureNominal:[35,55],
+      temperature:24.8, temperatureUnit:"°C", tempNominal:[15,35],
+      status:"ok", leak:false, battery:"Self-powered · harvesting 3.1 mW",
+      lastService:"2026-05-12", nextService:"2026-11-12", firmware:"v0.9.2",
+      notes:"Operating within nominal range." },
+    { id:"VLT-002", name:"Volturn V1", location:"Solar OEM · Process Utility Line B",
+      pressure:58.7, pressureUnit:"psi", pressureNominal:[35,55],
+      temperature:41.2, temperatureUnit:"°C", tempNominal:[15,35],
+      status:"warn", leak:false, battery:"Self-powered · harvesting 2.4 mW",
+      lastService:"2025-12-01", nextService:"2026-06-01 (OVERDUE)", firmware:"v0.9.1",
+      notes:"Pressure and temperature trending above nominal. Schedule service." },
+    { id:"VLT-003", name:"Volturn V1", location:"Battery Storage OEM · Thermal Loop C",
+      pressure:12.4, pressureUnit:"psi", pressureNominal:[35,55],
+      temperature:22.1, temperatureUnit:"°C", tempNominal:[15,35],
+      status:"danger", leak:true, battery:"Self-powered · harvesting 0.6 mW (LOW FLOW)",
+      lastService:"2026-03-18", nextService:"2026-09-18", firmware:"v0.9.2",
+      notes:"LEAK DETECTED. Pressure drop of 71% from nominal. Isolate line and inspect fitting immediately." },
+    { id:"VLT-004", name:"Volturn V1", location:"Industrial Utility · Chilled Water Line D",
+      pressure:44.5, pressureUnit:"psi", pressureNominal:[35,55],
+      temperature:18.3, temperatureUnit:"°C", tempNominal:[15,35],
+      status:"ok", leak:false, battery:"Self-powered · harvesting 3.4 mW",
+      lastService:"2026-06-02", nextService:"2026-12-02", firmware:"v0.9.2",
+      notes:"Operating within nominal range." },
+    { id:"VLT-005", name:"Volturn V1", location:"Fab 2 · Deionized Water Loop",
+      pressure:47.9, pressureUnit:"psi", pressureNominal:[35,55],
+      temperature:26.7, temperatureUnit:"°C", tempNominal:[15,35],
+      status:"ok", leak:false, battery:"Self-powered · harvesting 2.9 mW",
+      lastService:"2026-05-28", nextService:"2026-11-28", firmware:"v0.9.2",
+      notes:"Operating within nominal range." },
+    { id:"VLT-006", name:"Volturn V1", location:"Battery Pack Cooling · Rack 12",
+      pressure:8.2, pressureUnit:"psi", pressureNominal:[35,55],
+      temperature:19.5, temperatureUnit:"°C", tempNominal:[15,35],
+      status:"danger", leak:true, battery:"Self-powered · harvesting 0.3 mW (LOW FLOW)",
+      lastService:"2026-02-14", nextService:"2026-08-14", firmware:"v0.9.1",
+      notes:"LEAK DETECTED. Sudden pressure loss recorded 03:17 UTC. Coolant may be discharging into rack chassis — shut down affected rack." }
+  ];
+
+  const esc = (s) => String(s).replace(/[&<>"']/g, c =>
+    ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+
+  const homeView = document.getElementById("home-view");
+  const detailView = document.getElementById("detail-view");
+  const detailContent = document.getElementById("detail-content");
+  const grid = document.getElementById("card-grid");
+
+  function renderHome() {
+    let ok = 0, warn = 0, danger = 0;
+    const html = sensors.map(s => {
+      if (s.status === "ok") ok++;
+      else if (s.status === "warn") warn++;
+      else if (s.status === "danger") danger++;
+      const badgeText = s.leak ? "LEAK" : (s.status === "warn" ? "Service" : "OK");
+      return `
+        <div class="card ${s.status === "danger" ? "danger" : ""}" data-id="${esc(s.id)}">
+          <div class="card-header">
+            <div>
+              <div class="card-title">${esc(s.id)}</div>
+              <div class="card-loc">${esc(s.location)}</div>
+            </div>
+            <span class="badge ${s.status}">${badgeText}</span>
+          </div>
+          <div class="metrics">
+            <div>
+              <div class="metric-label">Pressure</div>
+              <div class="metric-value">${s.pressure} <span style="color:var(--muted);font-size:12px">${s.pressureUnit}</span></div>
+            </div>
+            <div>
+              <div class="metric-label">Temp</div>
+              <div class="metric-value">${s.temperature} <span style="color:var(--muted);font-size:12px">${s.temperatureUnit}</span></div>
+            </div>
+          </div>
+        </div>`;
+    }).join("");
+
+    grid.innerHTML = html;
+    document.getElementById("sum-total").textContent  = sensors.length;
+    document.getElementById("sum-ok").textContent     = ok;
+    document.getElementById("sum-warn").textContent   = warn;
+    document.getElementById("sum-danger").textContent = danger;
+  }
+
+  // Event delegation — one listener, no per-card handlers
+  grid.addEventListener("click", (e) => {
+    const card = e.target.closest(".card");
+    if (card) showDetail(card.dataset.id);
+  });
+  document.getElementById("back-btn").addEventListener("click", showHome);
+
+  function showDetail(id) {
+    const s = sensors.find(x => x.id === id);
+    if (!s) return;
+
+    const bannerText = {
+      ok:     ["System Nominal", "All parameters within safe operating range."],
+      warn:   ["Maintenance Required", s.notes],
+      danger: ["LEAK DETECTED — IMMEDIATE ACTION", s.notes]
+    }[s.status];
+    const bannerIcon = { ok: "OK", warn: "!", danger: "!" }[s.status];
+    const pressureClass = (s.pressure < s.pressureNominal[0] || s.pressure > s.pressureNominal[1])
+      ? (s.leak ? "danger" : "warn") : "";
+    const tempClass = (s.temperature < s.tempNominal[0] || s.temperature > s.tempNominal[1])
+      ? "warn" : "";
+
+    detailContent.innerHTML = `
+      <div class="detail-header">
+        <div>
+          <h1 class="detail-title">${esc(s.id)} — ${esc(s.name)}</h1>
+          <div class="detail-loc">${esc(s.location)}</div>
+        </div>
+        <span class="badge ${s.status}">${s.leak ? "LEAK" : s.status.toUpperCase()}</span>
+      </div>
+
+      <div class="status-banner ${s.status}">
+        <div class="status-icon ${s.status}">${bannerIcon}</div>
+        <div>
+          <div class="status-text-main">${bannerText[0]}</div>
+          <div class="status-text-sub">${esc(bannerText[1])}</div>
+        </div>
+      </div>
+
+      <div class="detail-grid">
+        <div class="panel">
+          <h3>Live Readings</h3>
+          <div class="metric-grid">
+            <div>
+              <div class="big-metric-label">Pressure</div>
+              <div class="big-metric-value ${pressureClass}">${s.pressure}<span class="big-metric-unit">${s.pressureUnit}</span></div>
+              <div class="metric-label" style="margin-top:6px">Nominal ${s.pressureNominal[0]}–${s.pressureNominal[1]} ${s.pressureUnit}</div>
+            </div>
+            <div>
+              <div class="big-metric-label">Temperature</div>
+              <div class="big-metric-value ${tempClass}">${s.temperature}<span class="big-metric-unit">${s.temperatureUnit}</span></div>
+              <div class="metric-label" style="margin-top:6px">Nominal ${s.tempNominal[0]}–${s.tempNominal[1]} ${s.temperatureUnit}</div>
+            </div>
+            <div>
+              <div class="big-metric-label">Leak Sensor</div>
+              <div class="big-metric-value ${s.leak ? 'danger' : ''}" style="font-size:20px">${s.leak ? 'LEAK DETECTED' : 'No Leak'}</div>
+            </div>
+            <div>
+              <div class="big-metric-label">Power</div>
+              <div class="big-metric-value" style="font-size:14px;font-weight:500;color:var(--muted)">${esc(s.battery)}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Maintenance</h3>
+          <ul class="maintenance-list">
+            <li><span class="maint-label">Firmware</span><span>${esc(s.firmware)}</span></li>
+            <li><span class="maint-label">Last service</span><span>${esc(s.lastService)}</span></li>
+            <li><span class="maint-label">Next service</span><span style="${s.nextService.includes('OVERDUE') ? 'color:var(--warn);font-weight:600' : ''}">${esc(s.nextService)}</span></li>
+            <li><span class="maint-label">Status</span><span>${s.leak ? 'ACTION REQUIRED' : (s.status === 'warn' ? 'Service due' : 'OK')}</span></li>
+          </ul>
+          ${s.status === 'danger'
+            ? '<button class="action-btn" type="button">Isolate Line &amp; Dispatch Technician</button>'
+            : s.status === 'warn'
+              ? '<button class="action-btn neutral" type="button">Schedule Maintenance</button>'
+              : '<button class="action-btn neutral" type="button">View History</button>'
+          }
+        </div>
+      </div>
+    `;
+
+    homeView.classList.add("hidden");
+    detailView.classList.remove("hidden");
+    window.scrollTo(0, 0);
+  }
+
+  function showHome() {
+    detailView.classList.add("hidden");
+    homeView.classList.remove("hidden");
+    detailContent.innerHTML = ""; // free memory
+    window.scrollTo(0, 0);
+  }
+
+  // Low-cost live-tick: 10 s, pauses when tab hidden
+  const liveEl = document.getElementById("live-text");
+  let tickTimer = null;
+  function startTick() {
+    if (tickTimer) return;
+    tickTimer = setInterval(() => {
+      liveEl.textContent = "Live · updated " + new Date().toLocaleTimeString();
+    }, 10000);
+  }
+  function stopTick() {
+    if (!tickTimer) return;
+    clearInterval(tickTimer);
+    tickTimer = null;
+  }
+  document.addEventListener("visibilitychange", () => {
+    document.hidden ? stopTick() : startTick();
+  });
+  startTick();
+
+  renderHome();
+</script>
+</body>
+</html>
