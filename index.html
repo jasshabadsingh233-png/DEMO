@@ -3,487 +3,1005 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>SAML — Volturn Sensor Dashboard</title>
+<title>SAML — Volturn Command Center</title>
 <style>
   :root {
-    --bg: #000000;
+    --bg: #000;
     --panel: #0d0d0d;
+    --panel-2: #141414;
     --border: #1f1f1f;
+    --border-2: #2a2a2a;
     --text: #f2f2f2;
     --muted: #8a8a8a;
     --ok: #22c55e;
     --warn: #f5a524;
     --danger: #ff1f2d;
-    --danger-glow: rgba(255, 31, 45, 0.35);
+    --danger-glow: rgba(255, 31, 45, 0.4);
+    --accent: #ff1f2d;
   }
   * { box-sizing: border-box; }
   html, body {
-    margin: 0;
-    padding: 0;
-    background: var(--bg);
-    color: var(--text);
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeSpeed;
   }
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px 32px;
+  button { font-family: inherit; }
+  input, select {
+    font-family: inherit; background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--danger); }
+
+  /* ===== SAML HERO ===== */
+  .app-bar {
+    background: linear-gradient(180deg, #0a0000 0%, #050505 100%);
     border-bottom: 1px solid var(--border);
-    background: #050505;
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    position: sticky; top: 0; z-index: 20;
     contain: layout style;
   }
-  .brand { display: flex; align-items: center; gap: 12px; }
-  .brand-mark {
-    width: 32px; height: 32px; border-radius: 6px;
-    background: linear-gradient(135deg, #ff1f2d, #7a0e15);
+  .brand-strip {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 32px; gap: 20px; flex-wrap: wrap;
+  }
+  .brand-hero { display: flex; align-items: center; gap: 18px; }
+  .brand-logo {
+    width: 56px; height: 56px; border-radius: 10px;
+    background: linear-gradient(135deg, #ff1f2d 0%, #7a0e15 100%);
     display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 14px; color: #fff;
+    font-weight: 900; font-size: 22px; color: #fff; letter-spacing: 1px;
+    box-shadow: 0 0 20px rgba(255,31,45,0.3);
   }
-  .brand-name { font-weight: 700; letter-spacing: 0.5px; }
-  .brand-sub  { color: var(--muted); font-size: 12px; }
-  .status-pill {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-size: 12px; color: var(--muted);
+  .brand-name-hero {
+    font-size: 22px; font-weight: 800; letter-spacing: 1px;
+    background: linear-gradient(90deg, #fff, #ff8a8a);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+  .brand-full { color: var(--muted); font-size: 12px; margin-top: 3px; letter-spacing: 0.5px; }
+  .brand-product { color: var(--danger); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px; }
 
-  main { padding: 32px; max-width: 1200px; margin: 0 auto; }
-
-  .page-title { font-size: 24px; margin: 0 0 4px 0; }
-  .page-sub { color: var(--muted); margin: 0 0 24px 0; font-size: 14px; }
-
-  .summary {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-  .summary-card {
+  .app-status { display: flex; align-items: center; gap: 20px; font-size: 12px; }
+  .clock {
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 15px; color: var(--text); font-weight: 500;
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
     background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px;
-    contain: layout style paint;
   }
-  .summary-label {
-    font-size: 12px; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.8px;
+  .conn-pill { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+  .conn-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--ok); box-shadow: 0 0 6px var(--ok);
+    animation: breathe 2s ease-in-out infinite;
   }
-  .summary-value { font-size: 28px; font-weight: 700; margin-top: 6px; }
-  .summary-value.danger { color: var(--danger); }
-  .summary-value.warn { color: var(--warn); }
-  .summary-value.ok { color: var(--ok); }
+  @keyframes breathe { 0%,100% { opacity: 0.5; } 50% { opacity: 1; } }
 
+  /* ===== Tabs ===== */
+  .tabs {
+    display: flex; gap: 4px; padding: 0 32px;
+    background: #050505; border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    background: transparent; color: var(--muted);
+    border: none; padding: 12px 18px; font-size: 13px; font-weight: 600;
+    cursor: pointer; letter-spacing: 0.5px;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); border-bottom-color: var(--danger); }
+
+  main { padding: 24px 32px 40px; max-width: 1400px; margin: 0 auto; }
+
+  /* ===== KPI row ===== */
+  .kpis {
+    display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px; margin-bottom: 24px;
+  }
+  @media (max-width: 1000px) { .kpis { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 600px)  { .kpis { grid-template-columns: repeat(2, 1fr); } }
+  .kpi {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px; contain: layout style paint;
+  }
+  .kpi label {
+    display: block; font-size: 10px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
+  }
+  .kpi span.val { font-size: 24px; font-weight: 700; display: block; margin-top: 4px; }
+  .kpi.ok    span.val { color: var(--ok); }
+  .kpi.warn  span.val { color: var(--warn); }
+  .kpi.danger span.val { color: var(--danger); }
+  .kpi small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ===== Controls ===== */
+  .controls {
+    display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;
+  }
+  .controls input { flex: 1; min-width: 220px; }
+  .btn {
+    background: var(--panel-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 14px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: border-color 0.15s, background 0.15s;
+  }
+  .btn:hover { border-color: var(--border-2); }
+  .btn.primary { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .btn.primary:hover { opacity: 0.9; }
+  .btn.ghost { background: transparent; }
+
+  /* ===== Grid & Cards ===== */
   .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
-    content-visibility: auto;
-    contain-intrinsic-size: 400px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+    gap: 14px;
   }
   .card {
-    position: relative;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    cursor: pointer;
+    position: relative; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px; cursor: pointer;
     transition: transform 0.15s ease, border-color 0.15s ease;
     contain: layout style paint;
   }
-  .card:hover {
-    transform: translateY(-2px);
-    border-color: #2c2c2c;
-  }
+  .card:hover { transform: translateY(-2px); border-color: var(--border-2); }
   .card.danger { border-color: var(--danger); }
-  /* Composited opacity pulse via pseudo-element — no shadow repaint */
   .card.danger::after {
-    content: "";
-    position: absolute; inset: -1px;
-    border-radius: 12px;
-    box-shadow: 0 0 20px var(--danger-glow);
-    pointer-events: none;
-    animation: pulse 2s ease-in-out infinite;
-    will-change: opacity;
+    content: ""; position: absolute; inset: -1px; border-radius: 12px;
+    box-shadow: 0 0 22px var(--danger-glow); pointer-events: none;
+    animation: pulse 2s ease-in-out infinite; will-change: opacity;
   }
-  @keyframes pulse {
-    0%, 100% { opacity: 0.4; }
-    50%      { opacity: 1;   }
-  }
+  .card.warn { border-color: rgba(245,165,36,0.4); }
+  @keyframes pulse { 0%,100% { opacity: 0.35; } 50% { opacity: 1; } }
   @media (prefers-reduced-motion: reduce) {
-    .card.danger::after,
-    .status-banner.danger::after { animation: none; opacity: 0.8; }
-    .card { transition: none; }
+    .card.danger::after { animation: none; opacity: 0.7; }
+    .card, .btn, .tab { transition: none; }
+    .conn-dot { animation: none; }
   }
-  .card-header {
-    display: flex; justify-content: space-between; align-items: flex-start;
-    margin-bottom: 12px;
-  }
-  .card-title { font-weight: 700; font-size: 16px; }
-  .card-loc   { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+  .card-hd { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .card-title { font-weight: 700; font-size: 15px; }
+  .card-loc { color: var(--muted); font-size: 11px; margin-top: 2px; }
   .badge {
-    padding: 4px 10px; border-radius: 999px;
-    font-size: 11px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.6px;
+    padding: 3px 9px; border-radius: 999px;
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;
+    white-space: nowrap;
   }
   .badge.ok     { background: rgba(34,197,94,0.15);  color: var(--ok); }
   .badge.warn   { background: rgba(245,165,36,0.15); color: var(--warn); }
   .badge.danger { background: var(--danger); color: #fff; }
 
-  .metrics {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px;
+  .card-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .mlabel { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .mval { font-size: 17px; font-weight: 600; margin-top: 2px; }
+  .mval.danger { color: var(--danger); }
+  .mval.warn   { color: var(--warn); }
+  .munit { color: var(--muted); font-size: 11px; font-weight: 400; }
+  .trend {
+    display: inline-block; margin-left: 4px; font-size: 10px; vertical-align: middle;
   }
-  .metric-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
-  .metric-value { font-size: 18px; font-weight: 600; margin-top: 2px; }
+  .trend.up   { color: var(--warn); }
+  .trend.down { color: var(--ok); }
 
+  .spark { width: 100%; height: 34px; margin-top: 10px; display: block; }
+
+  .facility-tag {
+    display: inline-block; font-size: 10px; color: var(--muted);
+    background: var(--panel-2); padding: 2px 7px; border-radius: 4px; margin-top: 6px;
+  }
+
+  /* ===== Detail ===== */
   .hidden { display: none !important; }
   .back-btn {
-    background: transparent; color: var(--muted);
-    border: 1px solid var(--border);
-    padding: 8px 14px; border-radius: 8px;
-    cursor: pointer; font-size: 13px; margin-bottom: 24px;
+    background: transparent; color: var(--muted); border: 1px solid var(--border);
+    padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; margin-bottom: 20px;
   }
-  .back-btn:hover { color: var(--text); border-color: #333; }
+  .back-btn:hover { color: var(--text); border-color: var(--border-2); }
 
-  .detail-header {
-    display: flex; justify-content: space-between; align-items: flex-start;
-    gap: 16px; margin-bottom: 24px; flex-wrap: wrap;
-  }
-  .detail-title { font-size: 28px; margin: 0; }
-  .detail-loc   { color: var(--muted); margin-top: 4px; }
+  .detail-hd { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+  .detail-title { font-size: 26px; margin: 0; }
+  .detail-sub { color: var(--muted); margin-top: 4px; font-size: 13px; }
 
   .status-banner {
-    position: relative;
-    padding: 20px 24px; border-radius: 12px; margin-bottom: 24px;
-    display: flex; align-items: center; gap: 16px;
-    contain: layout style paint;
+    position: relative; padding: 18px 22px; border-radius: 12px; margin-bottom: 22px;
+    display: flex; align-items: center; gap: 16px; contain: layout style paint;
   }
   .status-banner.ok     { background: rgba(34,197,94,0.08);  border: 1px solid rgba(34,197,94,0.3); }
   .status-banner.warn   { background: rgba(245,165,36,0.08); border: 1px solid rgba(245,165,36,0.3); }
   .status-banner.danger { background: rgba(255,31,45,0.12);  border: 1px solid var(--danger); }
   .status-banner.danger::after {
-    content: "";
-    position: absolute; inset: -1px;
-    border-radius: 12px;
-    box-shadow: 0 0 24px var(--danger-glow);
-    pointer-events: none;
-    animation: pulse 2s ease-in-out infinite;
-    will-change: opacity;
+    content: ""; position: absolute; inset: -1px; border-radius: 12px;
+    box-shadow: 0 0 26px var(--danger-glow); pointer-events: none;
+    animation: pulse 2s ease-in-out infinite; will-change: opacity;
   }
   .status-icon {
-    width: 44px; height: 44px; border-radius: 50%;
+    width: 42px; height: 42px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 22px; font-weight: 800; flex-shrink: 0;
+    font-size: 20px; font-weight: 800; flex-shrink: 0;
   }
-  .status-icon.ok     { background: var(--ok);     color: #000; }
-  .status-icon.warn   { background: var(--warn);   color: #000; }
+  .status-icon.ok { background: var(--ok); color: #000; }
+  .status-icon.warn { background: var(--warn); color: #000; }
   .status-icon.danger { background: var(--danger); color: #fff; }
-  .status-text-main { font-size: 18px; font-weight: 700; }
-  .status-text-sub  { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .status-txt-main { font-size: 17px; font-weight: 700; }
+  .status-txt-sub  { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .banner-actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
 
   .detail-grid {
     display: grid; grid-template-columns: 2fr 1fr; gap: 20px;
   }
-  @media (max-width: 800px) { .detail-grid { grid-template-columns: 1fr; } }
-
+  @media (max-width: 900px) { .detail-grid { grid-template-columns: 1fr; } }
   .panel {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
-    contain: layout style;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px; contain: layout style;
   }
   .panel h3 {
-    margin: 0 0 16px 0;
-    font-size: 14px; text-transform: uppercase; letter-spacing: 0.8px;
-    color: var(--muted);
+    margin: 0 0 14px 0; font-size: 12px; text-transform: uppercase;
+    letter-spacing: 0.8px; color: var(--muted); font-weight: 700;
   }
-  .metric-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-  .big-metric-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
-  .big-metric-value { font-size: 32px; font-weight: 700; margin-top: 4px; }
-  .big-metric-value.danger { color: var(--danger); }
-  .big-metric-value.warn { color: var(--warn); }
-  .big-metric-unit { color: var(--muted); font-size: 16px; font-weight: 400; margin-left: 4px; }
+  .metric-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+  .bigm-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+  .bigm-val   { font-size: 30px; font-weight: 700; margin-top: 4px; }
+  .bigm-val.danger { color: var(--danger); }
+  .bigm-val.warn   { color: var(--warn); }
+  .bigm-unit  { color: var(--muted); font-size: 15px; font-weight: 400; margin-left: 4px; }
+  .bigm-range { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  .detail-chart { width: 100%; height: 200px; margin-top: 14px; display: block; }
 
   .maintenance-list { list-style: none; padding: 0; margin: 0; }
   .maintenance-list li {
-    padding: 12px 0; border-bottom: 1px solid var(--border);
-    display: flex; justify-content: space-between; gap: 12px; font-size: 14px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; gap: 12px; font-size: 13px;
   }
   .maintenance-list li:last-child { border-bottom: none; }
-  .maint-label { color: var(--muted); }
+  .mnt-label { color: var(--muted); }
+  .mnt-val.warn   { color: var(--warn); font-weight: 600; }
+  .mnt-val.danger { color: var(--danger); font-weight: 600; }
 
-  .action-btn {
-    display: inline-block;
-    background: var(--danger); color: #fff; border: none;
-    padding: 10px 18px; border-radius: 8px;
-    font-weight: 600; cursor: pointer; font-size: 13px; margin-top: 12px;
+  .event-timeline { list-style: none; padding: 0; margin: 0; max-height: 260px; overflow-y: auto; }
+  .event-timeline li {
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+    font-size: 12px; display: grid; grid-template-columns: 80px 12px 1fr; gap: 8px; align-items: start;
   }
-  .action-btn.neutral { background: #1f1f1f; color: var(--text); }
-  .action-btn:hover { opacity: 0.9; }
+  .event-timeline li:last-child { border-bottom: none; }
+  .ev-time { color: var(--muted); font-family: monospace; }
+  .ev-marker { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; background: var(--muted); }
+  .ev-marker.danger { background: var(--danger); }
+  .ev-marker.warn { background: var(--warn); }
+  .ev-marker.ok { background: var(--ok); }
+
+  /* ===== Event log page ===== */
+  .event-log {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px; max-height: 70vh; overflow-y: auto;
+  }
+  .event-log h2 { margin-top: 0; font-size: 18px; }
+
+  /* ===== About page ===== */
+  .about-hero {
+    background: linear-gradient(135deg, #0a0000, #050505);
+    border: 1px solid var(--border); border-radius: 14px;
+    padding: 40px; text-align: center; margin-bottom: 22px;
+  }
+  .about-hero h1 {
+    font-size: 32px; margin: 0 0 8px;
+    background: linear-gradient(90deg, #fff, #ff8a8a);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .about-hero p { color: var(--muted); margin: 0; }
+  .about-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .about-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 22px; }
+  .about-panel h3 { color: var(--danger); font-size: 12px; letter-spacing: 1px; margin: 0 0 10px; text-transform: uppercase; }
+  .about-panel p { line-height: 1.6; font-size: 14px; margin: 0; color: #ccc; }
+
+  /* ===== Toast ===== */
+  #toast-stack {
+    position: fixed; bottom: 24px; right: 24px; z-index: 100;
+    display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+  }
+  .toast {
+    background: var(--panel-2); border: 1px solid var(--danger);
+    border-left: 4px solid var(--danger); border-radius: 8px;
+    padding: 14px 18px; min-width: 280px; max-width: 400px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 20px var(--danger-glow);
+    animation: slideIn 0.3s ease-out;
+    pointer-events: auto;
+  }
+  .toast.ok   { border-color: var(--ok);   border-left-color: var(--ok);   box-shadow: 0 8px 24px rgba(0,0,0,0.6); }
+  .toast.warn { border-color: var(--warn); border-left-color: var(--warn); box-shadow: 0 8px 24px rgba(0,0,0,0.6); }
+  .toast-t { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+  .toast-b { font-size: 12px; color: var(--muted); }
+  @keyframes slideIn {
+    from { transform: translateX(20px); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+  }
 
   footer {
-    text-align: center; color: var(--muted); font-size: 12px;
-    padding: 24px; border-top: 1px solid var(--border); margin-top: 40px;
+    text-align: center; color: var(--muted); font-size: 11px;
+    padding: 24px; border-top: 1px solid var(--border); margin-top: 32px;
+  }
+  kbd {
+    display: inline-block; padding: 1px 6px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 4px; font-family: monospace; font-size: 11px; color: var(--text);
   }
 </style>
 </head>
 <body>
 
-<header>
-  <div class="brand">
-    <div class="brand-mark">S</div>
-    <div>
-      <div class="brand-name">SAML &middot; Volturn</div>
-      <div class="brand-sub">Self-Powered Smart Fitting Network</div>
+<div class="app-bar">
+  <div class="brand-strip">
+    <div class="brand-hero">
+      <div class="brand-logo">SAML</div>
+      <div>
+        <div class="brand-name-hero">SAML</div>
+        <div class="brand-full">Solar Advance Machinery Limited</div>
+        <div class="brand-product">Volturn · Self-Powered Smart Fitting Network</div>
+      </div>
+    </div>
+    <div class="app-status">
+      <span class="conn-pill"><span class="conn-dot"></span> LIVE</span>
+      <span class="clock" id="clock">--:--:--</span>
     </div>
   </div>
-  <div class="status-pill">
-    <span class="dot"></span>
-    <span id="live-text">Live &middot; updated just now</span>
+  <div class="tabs">
+    <button class="tab active" data-tab="overview">Sensor Overview</button>
+    <button class="tab" data-tab="events">Event Log</button>
+    <button class="tab" data-tab="about">About SAML</button>
   </div>
-</header>
+</div>
 
 <main>
-  <section id="home-view">
-    <h1 class="page-title">Sensor Overview</h1>
-    <p class="page-sub">Click any fitting to view live status, pressure, temperature, and maintenance.</p>
+  <!-- OVERVIEW -->
+  <section id="overview-view">
+    <div class="kpis">
+      <div class="kpi"><label>Total Units</label><span class="val" id="k-total">0</span><small>deployed</small></div>
+      <div class="kpi ok"><label>Healthy</label><span class="val" id="k-ok">0</span><small>nominal</small></div>
+      <div class="kpi warn"><label>Maintenance</label><span class="val" id="k-warn">0</span><small>service due</small></div>
+      <div class="kpi danger"><label>Leaks Detected</label><span class="val" id="k-danger">0</span><small>active alerts</small></div>
+      <div class="kpi"><label>Fleet Uptime</label><span class="val" id="k-uptime">--</span><small>this session</small></div>
+      <div class="kpi"><label>Energy Harvested</label><span class="val" id="k-energy">0.0 <span class="munit">Wh</span></span><small>fleet total</small></div>
+    </div>
 
-    <div class="summary">
-      <div class="summary-card">
-        <div class="summary-label">Total Units</div>
-        <div class="summary-value" id="sum-total">0</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-label">Healthy</div>
-        <div class="summary-value ok" id="sum-ok">0</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-label">Maintenance</div>
-        <div class="summary-value warn" id="sum-warn">0</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-label">Leaks Detected</div>
-        <div class="summary-value danger" id="sum-danger">0</div>
-      </div>
+    <div class="controls">
+      <input id="search" placeholder="Search sensor ID or location...">
+      <select id="filter">
+        <option value="all">All statuses</option>
+        <option value="ok">Healthy only</option>
+        <option value="warn">Maintenance</option>
+        <option value="danger">Leaks only</option>
+      </select>
+      <select id="facility-filter">
+        <option value="all">All facilities</option>
+      </select>
+      <select id="sort">
+        <option value="priority">Sort: Priority</option>
+        <option value="id">Sort: ID</option>
+        <option value="pressure">Sort: Pressure</option>
+        <option value="temp">Sort: Temperature</option>
+      </select>
+      <button class="btn primary" id="btn-simulate">Simulate Leak</button>
+      <button class="btn" id="btn-export">Export CSV</button>
+      <button class="btn ghost" id="btn-reset">Reset Fleet</button>
     </div>
 
     <div class="grid" id="card-grid"></div>
   </section>
 
+  <!-- EVENTS -->
+  <section id="events-view" class="hidden">
+    <div class="event-log">
+      <h2>Fleet Event Log</h2>
+      <p style="color:var(--muted);font-size:13px;margin-top:0">Live stream of alerts, state transitions, and service events across the Volturn network.</p>
+      <ul class="event-timeline" id="event-list-full"></ul>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about-view" class="hidden">
+    <div class="about-hero">
+      <h1>Solar Advance Machinery Limited</h1>
+      <p>Founded 2025 · Electronics &amp; Sensor Integration Startup</p>
+    </div>
+    <div class="about-grid">
+      <div class="about-panel">
+        <h3>Mission</h3>
+        <p>Bring intelligence to industrial fluid systems &mdash; bridging the gap between commodity fluid fittings and IoT-enabled monitoring systems that require no batteries or external wiring.</p>
+      </div>
+      <div class="about-panel">
+        <h3>The Insight</h3>
+        <p>Tier-1 manufacturers &mdash; semiconductor fabs, solar and battery-storage OEMs, industrial utilities &mdash; are losing visibility into their coolant loops, process utility lines, and thermal management systems.</p>
+      </div>
+      <div class="about-panel">
+        <h3>Volturn V1</h3>
+        <p>A self-powered smart brass fitting that harvests energy from fluid pressure itself and broadcasts real-time conditions over Bluetooth. No battery. No external connector. Drop-in replacement for standard fittings.</p>
+      </div>
+      <div class="about-panel">
+        <h3>Status</h3>
+        <p>Pre-prototype stage. Validating the energy harvester and wireless architecture.</p>
+      </div>
+      <div class="about-panel">
+        <h3>Target Markets</h3>
+        <p>Semiconductor fabs &middot; Solar/battery storage OEMs &middot; Industrial utilities &middot; Thermal management systems.</p>
+      </div>
+      <div class="about-panel">
+        <h3>Keyboard Shortcuts</h3>
+        <p><kbd>1</kbd> Overview &nbsp; <kbd>2</kbd> Events &nbsp; <kbd>3</kbd> About &nbsp; <kbd>L</kbd> Simulate leak &nbsp; <kbd>E</kbd> Export CSV &nbsp; <kbd>Esc</kbd> Back</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- DETAIL -->
   <section id="detail-view" class="hidden">
     <button class="back-btn" type="button" id="back-btn">&larr; Back to overview</button>
     <div id="detail-content"></div>
   </section>
 </main>
 
-<footer>Solar Advance Machinery Limited &middot; Volturn Prototype Dashboard &middot; Demo Data</footer>
+<footer>
+  Solar Advance Machinery Limited &middot; Volturn Command Center &middot; Demo build
+</footer>
+
+<div id="toast-stack"></div>
 
 <script>
-  const sensors = [
-    { id:"VLT-001", name:"Volturn V1", location:"Semiconductor Fab · Coolant Loop A",
-      pressure:42.1, pressureUnit:"psi", pressureNominal:[35,55],
-      temperature:24.8, temperatureUnit:"°C", tempNominal:[15,35],
-      status:"ok", leak:false, battery:"Self-powered · harvesting 3.1 mW",
-      lastService:"2026-05-12", nextService:"2026-11-12", firmware:"v0.9.2",
-      notes:"Operating within nominal range." },
-    { id:"VLT-002", name:"Volturn V1", location:"Solar OEM · Process Utility Line B",
-      pressure:58.7, pressureUnit:"psi", pressureNominal:[35,55],
-      temperature:41.2, temperatureUnit:"°C", tempNominal:[15,35],
-      status:"warn", leak:false, battery:"Self-powered · harvesting 2.4 mW",
-      lastService:"2025-12-01", nextService:"2026-06-01 (OVERDUE)", firmware:"v0.9.1",
-      notes:"Pressure and temperature trending above nominal. Schedule service." },
-    { id:"VLT-003", name:"Volturn V1", location:"Battery Storage OEM · Thermal Loop C",
-      pressure:12.4, pressureUnit:"psi", pressureNominal:[35,55],
-      temperature:22.1, temperatureUnit:"°C", tempNominal:[15,35],
-      status:"danger", leak:true, battery:"Self-powered · harvesting 0.6 mW (LOW FLOW)",
-      lastService:"2026-03-18", nextService:"2026-09-18", firmware:"v0.9.2",
-      notes:"LEAK DETECTED. Pressure drop of 71% from nominal. Isolate line and inspect fitting immediately." },
-    { id:"VLT-004", name:"Volturn V1", location:"Industrial Utility · Chilled Water Line D",
-      pressure:44.5, pressureUnit:"psi", pressureNominal:[35,55],
-      temperature:18.3, temperatureUnit:"°C", tempNominal:[15,35],
-      status:"ok", leak:false, battery:"Self-powered · harvesting 3.4 mW",
-      lastService:"2026-06-02", nextService:"2026-12-02", firmware:"v0.9.2",
-      notes:"Operating within nominal range." },
-    { id:"VLT-005", name:"Volturn V1", location:"Fab 2 · Deionized Water Loop",
-      pressure:47.9, pressureUnit:"psi", pressureNominal:[35,55],
-      temperature:26.7, temperatureUnit:"°C", tempNominal:[15,35],
-      status:"ok", leak:false, battery:"Self-powered · harvesting 2.9 mW",
-      lastService:"2026-05-28", nextService:"2026-11-28", firmware:"v0.9.2",
-      notes:"Operating within nominal range." },
-    { id:"VLT-006", name:"Volturn V1", location:"Battery Pack Cooling · Rack 12",
-      pressure:8.2, pressureUnit:"psi", pressureNominal:[35,55],
-      temperature:19.5, temperatureUnit:"°C", tempNominal:[15,35],
-      status:"danger", leak:true, battery:"Self-powered · harvesting 0.3 mW (LOW FLOW)",
-      lastService:"2026-02-14", nextService:"2026-08-14", firmware:"v0.9.1",
-      notes:"LEAK DETECTED. Sudden pressure loss recorded 03:17 UTC. Coolant may be discharging into rack chassis — shut down affected rack." }
-  ];
+"use strict";
 
-  const esc = (s) => String(s).replace(/[&<>"']/g, c =>
-    ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+/* ============================================================
+   SAML VOLTURN COMMAND CENTER
+   Vanilla JS, no external deps.
+   All buffers capped, updates throttled, paused when tab hidden.
+   ============================================================ */
 
-  const homeView = document.getElementById("home-view");
-  const detailView = document.getElementById("detail-view");
-  const detailContent = document.getElementById("detail-content");
-  const grid = document.getElementById("card-grid");
+const HISTORY_LEN = 60;
+const MAX_EVENTS  = 200;
+const TICK_MS     = 2000;
 
-  function renderHome() {
-    let ok = 0, warn = 0, danger = 0;
-    const html = sensors.map(s => {
-      if (s.status === "ok") ok++;
-      else if (s.status === "warn") warn++;
-      else if (s.status === "danger") danger++;
-      const badgeText = s.leak ? "LEAK" : (s.status === "warn" ? "Service" : "OK");
-      return `
-        <div class="card ${s.status === "danger" ? "danger" : ""}" data-id="${esc(s.id)}">
-          <div class="card-header">
-            <div>
-              <div class="card-title">${esc(s.id)}</div>
-              <div class="card-loc">${esc(s.location)}</div>
-            </div>
-            <span class="badge ${s.status}">${badgeText}</span>
-          </div>
-          <div class="metrics">
-            <div>
-              <div class="metric-label">Pressure</div>
-              <div class="metric-value">${s.pressure} <span style="color:var(--muted);font-size:12px">${s.pressureUnit}</span></div>
-            </div>
-            <div>
-              <div class="metric-label">Temp</div>
-              <div class="metric-value">${s.temperature} <span style="color:var(--muted);font-size:12px">${s.temperatureUnit}</span></div>
-            </div>
-          </div>
-        </div>`;
-    }).join("");
+const now = () => Date.now();
+const fmt = (n, d = 1) => Number(n).toFixed(d);
+const pad = (n) => String(n).padStart(2, "0");
+const esc = (s) => String(s).replace(/[&<>"']/g, c =>
+  ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const timeStr = (t) => {
+  const d = new Date(t);
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+};
 
-    grid.innerHTML = html;
-    document.getElementById("sum-total").textContent  = sensors.length;
-    document.getElementById("sum-ok").textContent     = ok;
-    document.getElementById("sum-warn").textContent   = warn;
-    document.getElementById("sum-danger").textContent = danger;
+/* -------- Sensor fleet -------- */
+const sensorSeeds = [
+  { id:"VLT-001", facility:"Fab 1",           location:"Coolant Loop A",           basePressure:42, baseTemp:24, status:"ok",     firmware:"v0.9.2", lastService:"2026-05-12", nextService:"2026-11-12" },
+  { id:"VLT-002", facility:"Solar OEM",       location:"Process Utility Line B",   basePressure:58, baseTemp:41, status:"warn",   firmware:"v0.9.1", lastService:"2025-12-01", nextService:"2026-06-01 (OVERDUE)" },
+  { id:"VLT-003", facility:"Battery OEM",     location:"Thermal Loop C",           basePressure:12, baseTemp:22, status:"danger", firmware:"v0.9.2", lastService:"2026-03-18", nextService:"2026-09-18", leak:true },
+  { id:"VLT-004", facility:"Industrial Util", location:"Chilled Water Line D",     basePressure:45, baseTemp:18, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-02", nextService:"2026-12-02" },
+  { id:"VLT-005", facility:"Fab 2",           location:"Deionized Water Loop",     basePressure:48, baseTemp:27, status:"ok",     firmware:"v0.9.2", lastService:"2026-05-28", nextService:"2026-11-28" },
+  { id:"VLT-006", facility:"Battery OEM",     location:"Pack Cooling · Rack 12",   basePressure:8,  baseTemp:19, status:"danger", firmware:"v0.9.1", lastService:"2026-02-14", nextService:"2026-08-14", leak:true },
+  { id:"VLT-007", facility:"Fab 1",           location:"Coolant Loop B",           basePressure:44, baseTemp:25, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-10", nextService:"2026-12-10" },
+  { id:"VLT-008", facility:"Fab 2",           location:"UPW Return Header",        basePressure:39, baseTemp:23, status:"ok",     firmware:"v0.9.2", lastService:"2026-04-22", nextService:"2026-10-22" },
+  { id:"VLT-009", facility:"Solar OEM",       location:"Slurry Feed Manifold",     basePressure:51, baseTemp:32, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-15", nextService:"2026-12-15" },
+  { id:"VLT-010", facility:"Industrial Util", location:"Cooling Tower Return",     basePressure:37, baseTemp:29, status:"ok",     firmware:"v0.9.1", lastService:"2026-05-05", nextService:"2026-11-05" },
+];
+
+const sensors = sensorSeeds.map(seed => {
+  const s = { ...seed };
+  s.leak = !!seed.leak;
+  s.pressureNominal = [35, 55];
+  s.tempNominal = [15, 35];
+  s.pressure = seed.status === "danger" ? seed.basePressure : seed.basePressure;
+  s.temperature = seed.baseTemp;
+  s.harvestMw = seed.status === "danger" ? 0.4 : 2 + Math.random() * 1.5;
+  s.pHist = Array(HISTORY_LEN).fill(s.pressure);
+  s.tHist = Array(HISTORY_LEN).fill(s.temperature);
+  s.acknowledged = false;
+  s.events = [{
+    t: now() - 3600000,
+    kind: s.status === "danger" ? "danger" : (s.status === "warn" ? "warn" : "ok"),
+    msg: s.status === "danger" ? "Leak detected — pressure collapse from nominal"
+         : s.status === "warn" ? "Maintenance flagged — parameters trending out of range"
+         : "Unit came online, self-diagnostic OK"
+  }];
+  return s;
+});
+
+/* -------- Global event log -------- */
+const eventLog = [];
+function logEvent(sensor, kind, msg) {
+  const ev = { t: now(), sensorId: sensor ? sensor.id : "SYSTEM", kind, msg };
+  eventLog.unshift(ev);
+  if (eventLog.length > MAX_EVENTS) eventLog.length = MAX_EVENTS;
+  if (sensor) {
+    sensor.events.unshift({ t: ev.t, kind, msg });
+    if (sensor.events.length > 50) sensor.events.length = 50;
   }
+  if (currentTab === "events") renderEventLog();
+}
 
-  // Event delegation — one listener, no per-card handlers
-  grid.addEventListener("click", (e) => {
-    const card = e.target.closest(".card");
-    if (card) showDetail(card.dataset.id);
+/* -------- View state -------- */
+let currentTab = "overview";
+let currentDetailId = null;
+let sessionStart = now();
+let totalEnergyWh = 0;
+let searchQuery = "";
+let filterStatus = "all";
+let filterFacility = "all";
+let sortKey = "priority";
+
+/* -------- DOM refs -------- */
+const $ = (id) => document.getElementById(id);
+const grid = $("card-grid");
+const detailContent = $("detail-content");
+const toastStack = $("toast-stack");
+
+/* -------- Populate facility filter -------- */
+const facilities = [...new Set(sensors.map(s => s.facility))];
+const facSel = $("facility-filter");
+facilities.forEach(f => {
+  const opt = document.createElement("option");
+  opt.value = f; opt.textContent = f;
+  facSel.appendChild(opt);
+});
+
+/* -------- KPI helpers -------- */
+function updateKPIs() {
+  let ok = 0, warn = 0, danger = 0;
+  sensors.forEach(s => {
+    if (s.status === "danger") danger++;
+    else if (s.status === "warn") warn++;
+    else ok++;
   });
-  document.getElementById("back-btn").addEventListener("click", showHome);
+  $("k-total").textContent  = sensors.length;
+  $("k-ok").textContent     = ok;
+  $("k-warn").textContent   = warn;
+  $("k-danger").textContent = danger;
 
-  function showDetail(id) {
-    const s = sensors.find(x => x.id === id);
-    if (!s) return;
+  const secs = Math.floor((now() - sessionStart) / 1000);
+  const h = Math.floor(secs / 3600);
+  const m = Math.floor((secs % 3600) / 60);
+  const s = secs % 60;
+  $("k-uptime").textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
 
-    const bannerText = {
-      ok:     ["System Nominal", "All parameters within safe operating range."],
-      warn:   ["Maintenance Required", s.notes],
-      danger: ["LEAK DETECTED — IMMEDIATE ACTION", s.notes]
-    }[s.status];
-    const bannerIcon = { ok: "OK", warn: "!", danger: "!" }[s.status];
-    const pressureClass = (s.pressure < s.pressureNominal[0] || s.pressure > s.pressureNominal[1])
-      ? (s.leak ? "danger" : "warn") : "";
-    const tempClass = (s.temperature < s.tempNominal[0] || s.temperature > s.tempNominal[1])
-      ? "warn" : "";
+  $("k-energy").innerHTML = `${fmt(totalEnergyWh, 2)} <span class="munit">Wh</span>`;
+}
 
-    detailContent.innerHTML = `
-      <div class="detail-header">
-        <div>
-          <h1 class="detail-title">${esc(s.id)} — ${esc(s.name)}</h1>
-          <div class="detail-loc">${esc(s.location)}</div>
+/* -------- Sparkline SVG -------- */
+function sparkline(values, color, w = 260, h = 34) {
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = (max - min) || 1;
+  const step = w / (values.length - 1);
+  const points = values.map((v, i) => {
+    const x = (i * step).toFixed(1);
+    const y = (h - ((v - min) / range) * (h - 4) - 2).toFixed(1);
+    return `${x},${y}`;
+  }).join(" ");
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.5"/>
+  </svg>`;
+}
+
+/* -------- Card rendering -------- */
+function passesFilter(s) {
+  if (filterStatus !== "all" && s.status !== filterStatus) return false;
+  if (filterFacility !== "all" && s.facility !== filterFacility) return false;
+  if (searchQuery) {
+    const q = searchQuery.toLowerCase();
+    if (!s.id.toLowerCase().includes(q) && !s.location.toLowerCase().includes(q) && !s.facility.toLowerCase().includes(q)) return false;
+  }
+  return true;
+}
+function sortedSensors() {
+  const rank = { danger: 0, warn: 1, ok: 2 };
+  const list = sensors.filter(passesFilter);
+  if (sortKey === "priority")  list.sort((a,b) => rank[a.status] - rank[b.status] || a.id.localeCompare(b.id));
+  else if (sortKey === "id")   list.sort((a,b) => a.id.localeCompare(b.id));
+  else if (sortKey === "pressure") list.sort((a,b) => b.pressure - a.pressure);
+  else if (sortKey === "temp") list.sort((a,b) => b.temperature - a.temperature);
+  return list;
+}
+function trendArrow(hist) {
+  if (hist.length < 5) return "";
+  const recent = hist.slice(-5).reduce((a,b) => a+b, 0) / 5;
+  const prior  = hist.slice(-10, -5).reduce((a,b) => a+b, 0) / 5;
+  const d = recent - prior;
+  if (Math.abs(d) < 0.2) return "";
+  return d > 0 ? '<span class="trend up">&uarr;</span>' : '<span class="trend down">&darr;</span>';
+}
+function renderGrid() {
+  const list = sortedSensors();
+  if (list.length === 0) {
+    grid.innerHTML = `<div style="color:var(--muted);padding:40px;text-align:center;grid-column:1/-1">No sensors match your filter.</div>`;
+    return;
+  }
+  const html = list.map(s => {
+    const badgeText = s.leak ? "LEAK" : (s.status === "warn" ? "SERVICE" : "OK");
+    const pColor = s.status === "danger" ? "#ff1f2d" : (s.status === "warn" ? "#f5a524" : "#22c55e");
+    return `
+      <div class="card ${s.status === "danger" ? "danger" : s.status === "warn" ? "warn" : ""}" data-id="${esc(s.id)}">
+        <div class="card-hd">
+          <div>
+            <div class="card-title">${esc(s.id)}</div>
+            <div class="card-loc">${esc(s.location)}</div>
+            <div class="facility-tag">${esc(s.facility)}</div>
+          </div>
+          <span class="badge ${s.status}">${badgeText}</span>
         </div>
-        <span class="badge ${s.status}">${s.leak ? "LEAK" : s.status.toUpperCase()}</span>
-      </div>
-
-      <div class="status-banner ${s.status}">
-        <div class="status-icon ${s.status}">${bannerIcon}</div>
-        <div>
-          <div class="status-text-main">${bannerText[0]}</div>
-          <div class="status-text-sub">${esc(bannerText[1])}</div>
+        <div class="card-metrics">
+          <div>
+            <div class="mlabel">Pressure</div>
+            <div class="mval ${s.leak ? 'danger' : ''}">${fmt(s.pressure)} <span class="munit">psi</span>${trendArrow(s.pHist)}</div>
+          </div>
+          <div>
+            <div class="mlabel">Temperature</div>
+            <div class="mval">${fmt(s.temperature)} <span class="munit">&deg;C</span>${trendArrow(s.tHist)}</div>
+          </div>
         </div>
-      </div>
+        ${sparkline(s.pHist, pColor)}
+      </div>`;
+  }).join("");
+  grid.innerHTML = html;
+}
 
-      <div class="detail-grid">
+/* -------- Detail rendering -------- */
+function detailChart(hist, min, max, color, label, unit) {
+  const w = 600, h = 200, padL = 40, padB = 20, padT = 10, padR = 10;
+  const cw = w - padL - padR, ch = h - padT - padB;
+  const dMin = Math.min(min, ...hist);
+  const dMax = Math.max(max, ...hist);
+  const range = (dMax - dMin) || 1;
+  const step = cw / (hist.length - 1);
+  const points = hist.map((v, i) => {
+    const x = padL + (i * step);
+    const y = padT + ch - ((v - dMin) / range) * ch;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(" ");
+  // Nominal band
+  const bandTop = padT + ch - ((max - dMin) / range) * ch;
+  const bandBot = padT + ch - ((min - dMin) / range) * ch;
+  return `<svg class="detail-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <rect x="${padL}" y="${bandTop}" width="${cw}" height="${bandBot - bandTop}" fill="rgba(34,197,94,0.08)"/>
+    <line x1="${padL}" y1="${bandTop}" x2="${padL+cw}" y2="${bandTop}" stroke="rgba(34,197,94,0.3)" stroke-dasharray="3,3"/>
+    <line x1="${padL}" y1="${bandBot}" x2="${padL+cw}" y2="${bandBot}" stroke="rgba(34,197,94,0.3)" stroke-dasharray="3,3"/>
+    <polyline points="${points}" fill="none" stroke="${color}" stroke-width="2"/>
+    <text x="${padL-6}" y="${padT+8}" text-anchor="end" fill="#8a8a8a" font-size="10" font-family="monospace">${fmt(dMax,0)}</text>
+    <text x="${padL-6}" y="${padT+ch}" text-anchor="end" fill="#8a8a8a" font-size="10" font-family="monospace">${fmt(dMin,0)}</text>
+    <text x="${padL}" y="${h-4}" fill="#8a8a8a" font-size="10">${hist.length} pts &middot; ${label} (${unit})</text>
+  </svg>`;
+}
+function renderDetail(id) {
+  const s = sensors.find(x => x.id === id);
+  if (!s) return;
+  currentDetailId = id;
+
+  const bannerText = {
+    ok:     ["System Nominal", "All parameters within safe operating range."],
+    warn:   ["Maintenance Required", "Parameters trending outside nominal band. Schedule service."],
+    danger: ["LEAK DETECTED — IMMEDIATE ACTION",
+             s.acknowledged ? "Alert acknowledged by operator. Dispatch technician." : "Pressure collapse from nominal. Isolate line and inspect fitting."]
+  }[s.status];
+  const bannerIcon = { ok: "OK", warn: "!", danger: "!" }[s.status];
+  const pClass = s.leak || s.pressure < s.pressureNominal[0] || s.pressure > s.pressureNominal[1] ? (s.leak ? "danger" : "warn") : "";
+  const tClass = s.temperature < s.tempNominal[0] || s.temperature > s.tempNominal[1] ? "warn" : "";
+
+  const actions = s.status === "danger"
+    ? `<button class="btn primary" id="act-ack" ${s.acknowledged ? 'disabled style="opacity:0.5"' : ''}>${s.acknowledged ? 'Acknowledged' : 'Acknowledge Alert'}</button>
+       <button class="btn" id="act-isolate">Isolate Line</button>
+       <button class="btn ghost" id="act-clear">Mark Resolved</button>`
+    : s.status === "warn"
+    ? `<button class="btn" id="act-service">Schedule Service</button>
+       <button class="btn ghost" id="act-clear">Clear Warning</button>`
+    : `<button class="btn ghost" id="act-fault">Force Fault (demo)</button>`;
+
+  detailContent.innerHTML = `
+    <div class="detail-hd">
+      <div>
+        <h1 class="detail-title">${esc(s.id)} &middot; Volturn V1</h1>
+        <div class="detail-sub">${esc(s.facility)} &middot; ${esc(s.location)}</div>
+      </div>
+      <span class="badge ${s.status}">${s.leak ? "LEAK" : s.status.toUpperCase()}</span>
+    </div>
+
+    <div class="status-banner ${s.status}">
+      <div class="status-icon ${s.status}">${bannerIcon}</div>
+      <div>
+        <div class="status-txt-main">${bannerText[0]}</div>
+        <div class="status-txt-sub">${esc(bannerText[1])}</div>
+      </div>
+      <div class="banner-actions">${actions}</div>
+    </div>
+
+    <div class="detail-grid">
+      <div>
         <div class="panel">
           <h3>Live Readings</h3>
           <div class="metric-grid">
             <div>
-              <div class="big-metric-label">Pressure</div>
-              <div class="big-metric-value ${pressureClass}">${s.pressure}<span class="big-metric-unit">${s.pressureUnit}</span></div>
-              <div class="metric-label" style="margin-top:6px">Nominal ${s.pressureNominal[0]}–${s.pressureNominal[1]} ${s.pressureUnit}</div>
+              <div class="bigm-label">Pressure</div>
+              <div class="bigm-val ${pClass}" id="d-pressure">${fmt(s.pressure)}<span class="bigm-unit">psi</span></div>
+              <div class="bigm-range">Nominal ${s.pressureNominal[0]}&ndash;${s.pressureNominal[1]} psi</div>
             </div>
             <div>
-              <div class="big-metric-label">Temperature</div>
-              <div class="big-metric-value ${tempClass}">${s.temperature}<span class="big-metric-unit">${s.temperatureUnit}</span></div>
-              <div class="metric-label" style="margin-top:6px">Nominal ${s.tempNominal[0]}–${s.tempNominal[1]} ${s.temperatureUnit}</div>
+              <div class="bigm-label">Temperature</div>
+              <div class="bigm-val ${tClass}" id="d-temp">${fmt(s.temperature)}<span class="bigm-unit">&deg;C</span></div>
+              <div class="bigm-range">Nominal ${s.tempNominal[0]}&ndash;${s.tempNominal[1]} &deg;C</div>
             </div>
             <div>
-              <div class="big-metric-label">Leak Sensor</div>
-              <div class="big-metric-value ${s.leak ? 'danger' : ''}" style="font-size:20px">${s.leak ? 'LEAK DETECTED' : 'No Leak'}</div>
+              <div class="bigm-label">Leak Sensor</div>
+              <div class="bigm-val ${s.leak ? 'danger' : ''}" style="font-size:20px">${s.leak ? 'LEAK DETECTED' : 'No Leak'}</div>
             </div>
             <div>
-              <div class="big-metric-label">Power</div>
-              <div class="big-metric-value" style="font-size:14px;font-weight:500;color:var(--muted)">${esc(s.battery)}</div>
+              <div class="bigm-label">Energy Harvesting</div>
+              <div class="bigm-val" style="font-size:20px" id="d-harvest">${fmt(s.harvestMw, 2)} <span class="bigm-unit">mW</span></div>
             </div>
           </div>
-        </div>
-
-        <div class="panel">
-          <h3>Maintenance</h3>
-          <ul class="maintenance-list">
-            <li><span class="maint-label">Firmware</span><span>${esc(s.firmware)}</span></li>
-            <li><span class="maint-label">Last service</span><span>${esc(s.lastService)}</span></li>
-            <li><span class="maint-label">Next service</span><span style="${s.nextService.includes('OVERDUE') ? 'color:var(--warn);font-weight:600' : ''}">${esc(s.nextService)}</span></li>
-            <li><span class="maint-label">Status</span><span>${s.leak ? 'ACTION REQUIRED' : (s.status === 'warn' ? 'Service due' : 'OK')}</span></li>
-          </ul>
-          ${s.status === 'danger'
-            ? '<button class="action-btn" type="button">Isolate Line &amp; Dispatch Technician</button>'
-            : s.status === 'warn'
-              ? '<button class="action-btn neutral" type="button">Schedule Maintenance</button>'
-              : '<button class="action-btn neutral" type="button">View History</button>'
-          }
+          <div id="d-chart">
+            ${detailChart(s.pHist, s.pressureNominal[0], s.pressureNominal[1], "#ff1f2d", "Pressure", "psi")}
+          </div>
+          <div id="d-chart2">
+            ${detailChart(s.tHist, s.tempNominal[0], s.tempNominal[1], "#f5a524", "Temperature", "°C")}
+          </div>
         </div>
       </div>
-    `;
 
-    homeView.classList.add("hidden");
-    detailView.classList.remove("hidden");
-    window.scrollTo(0, 0);
-  }
+      <div>
+        <div class="panel" style="margin-bottom:16px">
+          <h3>Maintenance</h3>
+          <ul class="maintenance-list">
+            <li><span class="mnt-label">Firmware</span><span>${esc(s.firmware)}</span></li>
+            <li><span class="mnt-label">Last service</span><span>${esc(s.lastService)}</span></li>
+            <li><span class="mnt-label">Next service</span><span class="${s.nextService.includes('OVERDUE') ? 'mnt-val warn' : ''}">${esc(s.nextService)}</span></li>
+            <li><span class="mnt-label">Status</span><span class="${s.leak ? 'mnt-val danger' : (s.status === 'warn' ? 'mnt-val warn' : '')}">${s.leak ? 'ACTION REQUIRED' : (s.status === 'warn' ? 'Service due' : 'OK')}</span></li>
+            <li><span class="mnt-label">Power source</span><span>Self-powered (fluid harvest)</span></li>
+            <li><span class="mnt-label">Radio</span><span>BLE 5.0 · adv 1 Hz</span></li>
+            <li><span class="mnt-label">Body</span><span>Brass NPT 1/2"</span></li>
+          </ul>
+        </div>
+        <div class="panel">
+          <h3>Event Timeline</h3>
+          <ul class="event-timeline">
+            ${s.events.map(e => `
+              <li>
+                <span class="ev-time">${timeStr(e.t)}</span>
+                <span class="ev-marker ${e.kind}"></span>
+                <span>${esc(e.msg)}</span>
+              </li>`).join("") || '<li style="color:var(--muted)">No events</li>'}
+          </ul>
+        </div>
+      </div>
+    </div>
+  `;
 
-  function showHome() {
-    detailView.classList.add("hidden");
-    homeView.classList.remove("hidden");
-    detailContent.innerHTML = ""; // free memory
-    window.scrollTo(0, 0);
-  }
-
-  // Low-cost live-tick: 10 s, pauses when tab hidden
-  const liveEl = document.getElementById("live-text");
-  let tickTimer = null;
-  function startTick() {
-    if (tickTimer) return;
-    tickTimer = setInterval(() => {
-      liveEl.textContent = "Live · updated " + new Date().toLocaleTimeString();
-    }, 10000);
-  }
-  function stopTick() {
-    if (!tickTimer) return;
-    clearInterval(tickTimer);
-    tickTimer = null;
-  }
-  document.addEventListener("visibilitychange", () => {
-    document.hidden ? stopTick() : startTick();
+  // Wire action buttons
+  const ack = $("act-ack");
+  if (ack) ack.addEventListener("click", () => {
+    s.acknowledged = true;
+    logEvent(s, "warn", "Alert acknowledged by operator");
+    toast("warn", `${s.id} acknowledged`, "Awaiting technician dispatch");
+    renderDetail(id);
   });
-  startTick();
+  const iso = $("act-isolate");
+  if (iso) iso.addEventListener("click", () => {
+    logEvent(s, "warn", "Line isolation command sent");
+    toast("warn", `${s.id} isolated`, "Downstream flow stopped");
+  });
+  const clr = $("act-clear");
+  if (clr) clr.addEventListener("click", () => {
+    s.status = "ok"; s.leak = false; s.acknowledged = false;
+    s.pressure = s.basePressure; s.harvestMw = 2.5;
+    logEvent(s, "ok", "Fault cleared, unit restored to nominal");
+    toast("ok", `${s.id} restored`, "Unit back online");
+    renderDetail(id); renderGrid(); updateKPIs();
+  });
+  const srv = $("act-service");
+  if (srv) srv.addEventListener("click", () => {
+    logEvent(s, "warn", "Service ticket #" + Math.floor(Math.random()*90000+10000) + " scheduled");
+    toast("warn", `${s.id} scheduled`, "Service ticket created");
+  });
+  const flt = $("act-fault");
+  if (flt) flt.addEventListener("click", () => triggerLeak(s.id));
+}
+function refreshDetailNumbers() {
+  if (!currentDetailId) return;
+  const s = sensors.find(x => x.id === currentDetailId);
+  if (!s) return;
+  const dp = $("d-pressure"), dt = $("d-temp"), dh = $("d-harvest");
+  if (dp) dp.innerHTML = `${fmt(s.pressure)}<span class="bigm-unit">psi</span>`;
+  if (dt) dt.innerHTML = `${fmt(s.temperature)}<span class="bigm-unit">&deg;C</span>`;
+  if (dh) dh.innerHTML = `${fmt(s.harvestMw, 2)} <span class="bigm-unit">mW</span>`;
+  const c1 = $("d-chart"), c2 = $("d-chart2");
+  if (c1) c1.innerHTML = detailChart(s.pHist, s.pressureNominal[0], s.pressureNominal[1], "#ff1f2d", "Pressure", "psi");
+  if (c2) c2.innerHTML = detailChart(s.tHist, s.tempNominal[0], s.tempNominal[1], "#f5a524", "Temperature", "°C");
+}
 
-  renderHome();
+/* -------- Event log page -------- */
+function renderEventLog() {
+  const list = $("event-list-full");
+  if (!list) return;
+  list.innerHTML = eventLog.map(e => `
+    <li>
+      <span class="ev-time">${timeStr(e.t)}</span>
+      <span class="ev-marker ${e.kind}"></span>
+      <span><strong>${esc(e.sensorId)}</strong> &middot; ${esc(e.msg)}</span>
+    </li>`).join("") || '<li style="color:var(--muted)">No events yet</li>';
+}
+
+/* -------- Tabs -------- */
+function switchTab(name) {
+  currentTab = name;
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+  ["overview", "events", "about"].forEach(n => {
+    $(`${n}-view`).classList.toggle("hidden", n !== name);
+  });
+  $("detail-view").classList.add("hidden");
+  currentDetailId = null;
+  if (name === "events") renderEventLog();
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll(".tab").forEach(t => {
+  t.addEventListener("click", () => switchTab(t.dataset.tab));
+});
+
+/* -------- Grid interactions -------- */
+grid.addEventListener("click", (e) => {
+  const card = e.target.closest(".card");
+  if (!card) return;
+  $("overview-view").classList.add("hidden");
+  $("detail-view").classList.remove("hidden");
+  renderDetail(card.dataset.id);
+  window.scrollTo(0, 0);
+});
+$("back-btn").addEventListener("click", () => {
+  $("detail-view").classList.add("hidden");
+  $("overview-view").classList.remove("hidden");
+  detailContent.innerHTML = "";
+  currentDetailId = null;
+  window.scrollTo(0, 0);
+});
+
+/* -------- Search / filter / sort -------- */
+$("search").addEventListener("input", (e) => { searchQuery = e.target.value; renderGrid(); });
+$("filter").addEventListener("change", (e) => { filterStatus = e.target.value; renderGrid(); });
+$("facility-filter").addEventListener("change", (e) => { filterFacility = e.target.value; renderGrid(); });
+$("sort").addEventListener("change", (e) => { sortKey = e.target.value; renderGrid(); });
+
+/* -------- Simulate leak -------- */
+function triggerLeak(specificId) {
+  const candidates = sensors.filter(s => s.status === "ok" && (!specificId || s.id === specificId));
+  const target = specificId ? sensors.find(s => s.id === specificId) : candidates[Math.floor(Math.random() * candidates.length)];
+  if (!target) {
+    toast("warn", "No healthy sensor available", "All units already in warning/alarm state.");
+    return;
+  }
+  target.status = "danger";
+  target.leak = true;
+  target.pressure = 6 + Math.random() * 8;
+  target.harvestMw = 0.3;
+  logEvent(target, "danger", "LEAK DETECTED — pressure collapse from nominal");
+  toast("danger", `LEAK · ${target.id}`, `${target.facility} · ${target.location}`);
+  beep();
+  renderGrid(); updateKPIs();
+  if (currentDetailId === target.id) renderDetail(target.id);
+}
+$("btn-simulate").addEventListener("click", () => triggerLeak());
+
+/* -------- Reset fleet -------- */
+$("btn-reset").addEventListener("click", () => {
+  sensors.forEach((s, i) => {
+    const seed = sensorSeeds[i];
+    s.status = seed.status; s.leak = !!seed.leak; s.acknowledged = false;
+    s.pressure = seed.basePressure; s.temperature = seed.baseTemp;
+    s.pHist = Array(HISTORY_LEN).fill(s.pressure);
+    s.tHist = Array(HISTORY_LEN).fill(s.temperature);
+  });
+  eventLog.length = 0;
+  logEvent(null, "ok", "Fleet reset to seed state");
+  renderGrid(); updateKPIs();
+  if (currentDetailId) renderDetail(currentDetailId);
+  toast("ok", "Fleet reset", "All sensors returned to seed state");
+});
+
+/* -------- Export CSV -------- */
+$("btn-export").addEventListener("click", () => {
+  const rows = [["id","facility","location","status","leak","pressure_psi","temperature_c","harvest_mw","firmware","next_service"]];
+  sensors.forEach(s => rows.push([s.id, s.facility, s.location, s.status, s.leak, fmt(s.pressure), fmt(s.temperature), fmt(s.harvestMw,2), s.firmware, s.nextService]));
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `volturn-fleet-${Date.now()}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast("ok", "Fleet exported", "CSV downloaded");
+});
+
+/* -------- Toast -------- */
+function toast(kind, title, body) {
+  const t = document.createElement("div");
+  t.className = `toast ${kind}`;
+  t.innerHTML = `<div class="toast-t">${esc(title)}</div><div class="toast-b">${esc(body)}</div>`;
+  toastStack.appendChild(t);
+  setTimeout(() => {
+    t.style.transition = "opacity 0.4s"; t.style.opacity = "0";
+    setTimeout(() => t.remove(), 400);
+  }, 4500);
+}
+
+/* -------- Audio beep for leaks -------- */
+let audioCtx = null;
+function beep() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "square"; o.frequency.value = 880;
+    g.gain.value = 0.06;
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + 0.18);
+  } catch (e) { /* no-op */ }
+}
+
+/* -------- Clock -------- */
+function updateClock() {
+  $("clock").textContent = timeStr(now());
+}
+
+/* -------- Keyboard shortcuts -------- */
+document.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+  if (e.key === "1") switchTab("overview");
+  else if (e.key === "2") switchTab("events");
+  else if (e.key === "3") switchTab("about");
+  else if (e.key === "l" || e.key === "L") triggerLeak();
+  else if (e.key === "e" || e.key === "E") $("btn-export").click();
+  else if (e.key === "Escape" && currentDetailId) $("back-btn").click();
+});
+
+/* -------- Simulation tick -------- */
+function tick() {
+  sensors.forEach(s => {
+    // Small jitter
+    const pJit = (Math.random() - 0.5) * 1.2;
+    const tJit = (Math.random() - 0.5) * 0.6;
+    if (s.leak) {
+      s.pressure = Math.max(2, s.pressure + pJit * 0.3);
+      s.temperature += tJit;
+      s.harvestMw = Math.max(0.1, 0.3 + Math.random() * 0.3);
+    } else {
+      s.pressure = s.basePressure + pJit + (s.status === "warn" ? 3 : 0);
+      s.temperature = s.baseTemp + tJit + (s.status === "warn" ? 6 : 0);
+      s.harvestMw = 2 + Math.random() * 1.5;
+    }
+    s.pHist.push(s.pressure); if (s.pHist.length > HISTORY_LEN) s.pHist.shift();
+    s.tHist.push(s.temperature); if (s.tHist.length > HISTORY_LEN) s.tHist.shift();
+    // Accumulate energy: mW * seconds/3600 -> Wh
+    totalEnergyWh += (s.harvestMw / 1000) * (TICK_MS / 1000) / 3600;
+  });
+  updateKPIs();
+  if (currentTab === "overview" && !currentDetailId) renderGrid();
+  if (currentDetailId) refreshDetailNumbers();
+}
+
+let tickTimer = null;
+let clockTimer = null;
+function startLoops() {
+  if (!tickTimer) tickTimer = setInterval(tick, TICK_MS);
+  if (!clockTimer) clockTimer = setInterval(updateClock, 1000);
+}
+function stopLoops() {
+  if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+  if (clockTimer) { clearInterval(clockTimer); clockTimer = null; }
+}
+document.addEventListener("visibilitychange", () => {
+  document.hidden ? stopLoops() : startLoops();
+});
+
+/* -------- Bootstrap -------- */
+sensors.forEach(s => {
+  if (s.status === "danger") logEvent(s, "danger", "Leak alarm active at startup");
+  else if (s.status === "warn") logEvent(s, "warn", "Maintenance flag active at startup");
+});
+logEvent(null, "ok", "Volturn Command Center online");
+updateClock();
+updateKPIs();
+renderGrid();
+startLoops();
 </script>
 </body>
 </html>
