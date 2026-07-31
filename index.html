@@ -502,6 +502,51 @@
     border: 1px solid rgba(255,31,45,0.3);
   }
 
+  /* ===== Deploy wizard ===== */
+  .deploy-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(6px); z-index: 250;
+    display: flex; justify-content: center; align-items: center; padding: 20px;
+  }
+  .deploy-modal {
+    width: 100%; max-width: 460px;
+    background: linear-gradient(180deg, var(--panel-2) 0%, #060606 100%);
+    border: 1px solid var(--danger); border-radius: 16px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.7), 0 0 40px var(--danger-glow);
+    overflow: hidden;
+  }
+  .deploy-hd {
+    padding: 20px 24px 6px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .deploy-hd h2 { margin: 0; font-size: 18px; }
+  .deploy-hd small { color: var(--muted); font-size: 12px; display: block; margin-top: 4px; }
+  .deploy-close {
+    background: transparent; border: none; color: var(--muted);
+    font-size: 20px; cursor: pointer; min-height: auto; padding: 4px 8px;
+  }
+  .deploy-body { padding: 20px 24px; }
+  .deploy-field { margin-bottom: 14px; }
+  .deploy-field label {
+    display: block; font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; font-weight: 600;
+  }
+  .deploy-field input, .deploy-field select { width: 100%; }
+  .deploy-actions { display: flex; gap: 10px; padding: 12px 24px 20px; }
+  .deploy-actions .btn { flex: 1; justify-content: center; }
+  .install-log {
+    background: #030303; border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px; margin: 8px 24px 20px; font-family: monospace; font-size: 12px;
+    min-height: 120px; color: var(--ok);
+  }
+  .install-log .line {
+    opacity: 0; animation: fadeIn 0.3s forwards;
+    display: flex; gap: 8px;
+  }
+  .install-log .line.err  { color: var(--warn); }
+  .install-log .line.done { color: var(--danger); font-weight: 700; }
+  @keyframes fadeIn { to { opacity: 1; } }
+
   /* ===== Toast ===== */
   #toast-stack {
     position: fixed; bottom: 24px; right: 24px; z-index: 100;
@@ -661,7 +706,7 @@
         <button data-unit="imperial">bar·°F</button>
       </div>
       <button class="btn primary" id="btn-simulate">&#9888; Simulate Leak</button>
-      <button class="btn" id="btn-demo">&#9654; Auto-Demo</button>
+      <button class="btn" id="btn-deploy">&#43; Deploy Sensor</button>
       <button class="btn" id="btn-replay">&#9198; Replay</button>
       <button class="btn" id="btn-export">&#8681; CSV</button>
       <button class="btn ghost" id="btn-reset">&#8635; Reset</button>
@@ -1011,9 +1056,7 @@ let sortKey = "priority";
 let viewMode = "cards";     // 'cards' | 'compact'
 let muted = false;
 let notifyEnabled = false;
-let demoRunning = false;
-let demoStep = 0;
-let demoTimer = null;
+let nextSensorNum = 17;
 let replayMode = false;
 let replayIndex = 0;
 let replayPlaying = false;
@@ -1725,43 +1768,103 @@ function triggerLeak(specificId) {
 }
 $("btn-simulate").addEventListener("click", () => triggerLeak());
 
-/* -------- Auto-demo -------- */
-const demoScenario = [
-  { delay: 500,  fn: () => toast("ok", "Auto-Demo started", "Scripted scenario running") },
-  { delay: 2500, fn: () => triggerLeak("VLT-011") },
-  { delay: 4000, fn: () => {
-      const s = sensors.find(x => x.id === "VLT-011"); if (s) { s.acknowledged = true; logEvent(s, "warn", "Alert acknowledged by operator"); toast("warn", "VLT-011 acknowledged", "Tech en route"); renderGrid(); if (currentDetailId === "VLT-011") renderDetail("VLT-011"); }
-    } },
-  { delay: 3500, fn: () => triggerLeak("VLT-013") },
-  { delay: 3500, fn: () => {
-      const s = sensors.find(x => x.id === "VLT-002"); if (s) { s.status = "danger"; s.leak = true; s.pressure = 9; logEvent(s, "danger", "Escalation — service overdue unit failed"); toast("danger", "ESCALATION · VLT-002", "Overdue unit progressed to leak"); beep(); speak("Escalation. Unit V-L-T-0-0-2 failed."); renderGrid(); renderTopology(); updateKPIs(); }
-    } },
-  { delay: 3500, fn: () => {
-      const s = sensors.find(x => x.id === "VLT-003"); if (s) { s.status = "ok"; s.leak = false; s.acknowledged = false; s.pressure = s.basePressure; s.harvestMw = 2.6; logEvent(s, "ok", "Repair complete — VLT-003 restored"); toast("ok", "VLT-003 restored", "Field service complete"); renderGrid(); renderTopology(); updateKPIs(); }
-    } },
-  { delay: 3000, fn: () => toast("ok", "Auto-Demo complete", "All scenarios exercised"), stop: true },
-];
-function stepDemo() {
-  if (!demoRunning || demoStep >= demoScenario.length) { stopDemo(); return; }
-  const step = demoScenario[demoStep++];
-  step.fn();
-  if (step.stop) { stopDemo(); return; }
-  demoTimer = setTimeout(stepDemo, step.delay);
+/* -------- Deploy Sensor wizard -------- */
+function openDeploy() {
+  if ($("deploy-backdrop")) return;
+  const suggestedNum = String(nextSensorNum).padStart(3, "0");
+  const wrap = document.createElement("div");
+  wrap.className = "deploy-backdrop"; wrap.id = "deploy-backdrop";
+  wrap.innerHTML = `<div class="deploy-modal">
+    <div class="deploy-hd">
+      <div>
+        <h2>Deploy a Volturn V1</h2>
+        <small>Screw it in. No wire, no battery, no line shutdown.</small>
+      </div>
+      <button class="deploy-close" id="dep-close">&times;</button>
+    </div>
+    <div class="deploy-body">
+      <div class="deploy-field">
+        <label>Facility</label>
+        <select id="dep-facility">
+          ${facilities.map(f => `<option value="${esc(f)}">${esc(f)}</option>`).join("")}
+        </select>
+      </div>
+      <div class="deploy-field">
+        <label>Location / pipe name</label>
+        <input id="dep-location" placeholder="e.g. Coolant Loop E" value="Coolant Loop E">
+      </div>
+      <div class="deploy-field">
+        <label>Unit ID (auto)</label>
+        <input id="dep-id" value="VLT-${suggestedNum}" disabled style="opacity:0.6">
+      </div>
+    </div>
+    <div class="deploy-actions">
+      <button class="btn ghost" id="dep-cancel">Cancel</button>
+      <button class="btn primary" id="dep-install">&#9889; Install</button>
+    </div>
+  </div>`;
+  document.body.appendChild(wrap);
+  $("dep-close").addEventListener("click", closeDeploy);
+  $("dep-cancel").addEventListener("click", closeDeploy);
+  wrap.addEventListener("click", (e) => { if (e.target === wrap) closeDeploy(); });
+  $("dep-install").addEventListener("click", runInstall);
 }
-function startDemo() {
-  if (demoRunning) { stopDemo(); return; }
-  demoRunning = true; demoStep = 0;
-  $("btn-demo").classList.add("playing");
-  $("btn-demo").innerHTML = "&#9632; Stop Demo";
-  demoTimer = setTimeout(stepDemo, 200);
+function closeDeploy() { const b = $("deploy-backdrop"); if (b) b.remove(); }
+
+function runInstall() {
+  const facility = $("dep-facility").value;
+  const location = ($("dep-location").value || "New Line").trim();
+  const id = $("dep-id").value;
+
+  const body = document.querySelector(".deploy-modal .deploy-body");
+  const actions = document.querySelector(".deploy-modal .deploy-actions");
+  actions.remove();
+  body.innerHTML = `<div class="install-log" id="install-log"></div>`;
+  const logEl = $("install-log");
+  const lines = [
+    { t: 50,   msg: `[00:00.1] Volturn V1 seated on ${location}`, cls: "" },
+    { t: 700,  msg: `[00:00.7] Fluid seal verified (torque 22 N·m)`, cls: "" },
+    { t: 1200, msg: `[00:01.2] Piezo harvester active — 2.8 mW`, cls: "" },
+    { t: 1700, msg: `[00:01.7] Supercap charged to 3.3 V`, cls: "" },
+    { t: 2200, msg: `[00:02.2] BLE 5.0 advertisement started`, cls: "" },
+    { t: 2700, msg: `[00:02.7] Self-diagnostic OK`, cls: "" },
+    { t: 3200, msg: `${id} ONLINE  ·  no wire  ·  no battery`, cls: "done" },
+  ];
+  lines.forEach(l => setTimeout(() => {
+    const div = document.createElement("div");
+    div.className = "line " + l.cls;
+    div.textContent = l.msg;
+    logEl.appendChild(div);
+    logEl.scrollTop = logEl.scrollHeight;
+  }, l.t));
+
+  setTimeout(() => {
+    // Add the new sensor to the fleet
+    const newSensor = {
+      id, facility, location,
+      basePressure: 42, baseTemp: 24,
+      pressureNominal: [35, 55], tempNominal: [15, 35],
+      pressure: 42, temperature: 24,
+      status: "ok", leak: false, acknowledged: false,
+      firmware: "v0.9.2",
+      lastService: new Date().toISOString().slice(0, 10),
+      nextService: new Date(Date.now() + 180 * 86400000).toISOString().slice(0, 10),
+      rssi: -55, harvestMw: 2.8,
+      pHist: Array(HISTORY_LEN).fill(42),
+      tHist: Array(HISTORY_LEN).fill(24),
+      events: [{ t: now(), kind: "ok", msg: "Unit deployed — first advertisement received" }]
+    };
+    sensors.push(newSensor);
+    sensorSeeds.push({ ...newSensor });
+    nextSensorNum++;
+    logEvent(newSensor, "ok", `Deployed at ${facility} · ${location} — 5 min drop-in install`);
+    toast("ok", `${id} deployed`, `${facility} · ${location}`);
+    beep();
+    renderGrid(); renderTopology(); updateKPIs();
+    closeDeploy();
+  }, 3600);
 }
-function stopDemo() {
-  demoRunning = false;
-  if (demoTimer) { clearTimeout(demoTimer); demoTimer = null; }
-  $("btn-demo").classList.remove("playing");
-  $("btn-demo").innerHTML = "&#9654; Auto-Demo";
-}
-$("btn-demo").addEventListener("click", startDemo);
+$("btn-deploy").addEventListener("click", openDeploy);
 
 /* -------- Replay -------- */
 function openReplay() {
@@ -1949,7 +2052,7 @@ const commands = [
   { label: "Go to Event Log",    hint: "4",  fn: () => switchTab("events") },
   { label: "Go to About SAML",   hint: "5",  fn: () => switchTab("about") },
   { label: "Simulate leak",      hint: "L",  fn: () => triggerLeak() },
-  { label: "Start auto-demo",    hint: "D",  fn: () => startDemo() },
+  { label: "Deploy a new sensor", hint: "D", fn: () => openDeploy() },
   { label: "Open replay scrubber", hint: "R", fn: () => openReplay() },
   { label: "Export fleet CSV",   hint: "E",  fn: () => $("btn-export").click() },
   { label: "Reset fleet",        hint: "",   fn: () => $("btn-reset").click() },
@@ -2017,8 +2120,8 @@ const tourSteps = [
     body: "You'll get a live pressure gauge, animated fitting visualization with fluid flow, and pressure & temperature history with an anomaly-detection band." },
   { title: "Simulate a leak",
     body: "Press L or click Simulate Leak. A random healthy unit fails — red toast, audible beep, and a spoken warning. Great for demos." },
-  { title: "Auto-Demo runs the story for you",
-    body: "Press D or click Auto-Demo. A six-step scenario plays out — leak, acknowledgement, escalation, repair. Perfect for presentations." },
+  { title: "Deploy a new sensor live",
+    body: "Press D or click Deploy Sensor. A wizard walks through installing a Volturn — no wire, no battery, five minutes. Show the audience how easy it is." },
   { title: "Everything is a keystroke away",
     body: "Ctrl+K opens the command palette — jump to any sensor, any action. Press ? to see this tour again." },
 ];
@@ -2062,7 +2165,7 @@ document.addEventListener("keydown", (e) => {
   else if (e.key === "4") switchTab("events");
   else if (e.key === "5") switchTab("about");
   else if (e.key === "l" || e.key === "L") triggerLeak();
-  else if (e.key === "d" || e.key === "D") startDemo();
+  else if (e.key === "d" || e.key === "D") openDeploy();
   else if (e.key === "r" || e.key === "R") replayMode ? closeReplay() : openReplay();
   else if (e.key === "e" || e.key === "E") $("btn-export").click();
   else if (e.key === "f" || e.key === "F") toggleFullscreen();
