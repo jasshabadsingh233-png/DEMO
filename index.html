@@ -650,6 +650,7 @@
     <div class="app-status">
       <span class="conn-pill"><span class="conn-dot"></span> LIVE</span>
       <span class="clock" id="clock">--:--:--</span>
+      <button class="top-btn" id="btn-install" title="Install as a desktop app" style="display:none">&#8681; Install</button>
       <button class="top-btn" id="btn-ble" title="Connect to a Volturn (Web Bluetooth)">&#128268; Connect</button>
       <button class="top-btn" id="btn-notify" title="Enable desktop alerts">&#128276;</button>
       <button class="top-btn" id="btn-cmd" title="Command palette (Ctrl+K)">&#8984;K</button>
@@ -2021,6 +2022,27 @@ document.addEventListener("fullscreenchange", () => {
   document.body.classList.toggle("kiosk", !!document.fullscreenElement);
 });
 $("btn-fullscreen").addEventListener("click", toggleFullscreen);
+
+/* -------- PWA install -------- */
+let deferredInstall = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstall = e;
+  $("btn-install").style.display = "inline-flex";
+});
+$("btn-install").addEventListener("click", async () => {
+  if (!deferredInstall) { toast("warn", "Install unavailable", "Open in Chrome/Edge, or use Save As → Webpage, Complete."); return; }
+  deferredInstall.prompt();
+  const { outcome } = await deferredInstall.userChoice;
+  deferredInstall = null;
+  $("btn-install").style.display = "none";
+  toast(outcome === "accepted" ? "ok" : "warn",
+        outcome === "accepted" ? "Installed" : "Install dismissed",
+        outcome === "accepted" ? "Look for the Volturn app in your launcher" : "You can install again later");
+});
+window.addEventListener("appinstalled", () => {
+  logEvent(null, "ok", "Command Center installed as a desktop app");
+});
 
 /* -------- Web Bluetooth -------- */
 $("btn-ble").addEventListener("click", async () => {
