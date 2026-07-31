@@ -648,8 +648,8 @@
       </div>
     </div>
     <div class="app-status">
-      <span class="conn-pill"><span class="conn-dot"></span> LIVE</span>
-      <span class="clock" id="clock">--:--:--</span>
+      <span class="conn-pill"><span class="conn-dot"></span> DEMO MODE</span>
+      <span class="clock" id="clock" title="Local time — all timestamps in this app use the laptop's local timezone">--:--:--</span>
       <button class="top-btn" id="btn-install" title="Install as a desktop app" style="display:none">&#8681; Install</button>
       <button class="top-btn" id="btn-ble" title="Connect to a Volturn (Web Bluetooth)">&#128268; Connect</button>
       <button class="top-btn" id="btn-notify" title="Enable desktop alerts">&#128276;</button>
@@ -677,7 +677,7 @@
       <div class="kpi warn"><label>Maintenance</label><span class="val" id="k-warn">0</span><small>service due</small></div>
       <div class="kpi danger"><label>Leaks Detected</label><span class="val" id="k-danger">0</span><small>active alerts</small></div>
       <div class="kpi"><label>Fleet Uptime</label><span class="val" id="k-uptime">--</span><small>this session</small></div>
-      <div class="kpi"><label>Energy Harvested</label><span class="val" id="k-energy">0.000 <span class="munit">Wh</span></span><small>fleet total</small></div>
+      <div class="kpi"><label>Energy Harvested</label><span class="val" id="k-energy">0.0 <span class="munit">µWh</span></span><small>fleet total</small></div>
     </div>
 
     <div class="controls">
@@ -858,7 +858,7 @@
         <div class="sub">Swap a fitting during a normal seal check. Done.</div>
       </div>
       <div class="why-stat live">
-        <div class="big" id="wy-mw">0.0 mW</div>
+        <div class="big" id="wy-mw">0 µW</div>
         <div class="label">Fleet harvest, right now</div>
         <div class="sub">Live sum from every unit on this dashboard.</div>
       </div>
@@ -980,33 +980,35 @@ const tDisp = (t) => unitMode === "metric" ? fmt(t, 1) : fmt(cToF(t), 1);
 const tUnit = () => unitMode === "metric" ? "°C" : "°F";
 
 /* -------- Fleet seed -------- */
+/* Pressures in psi within BMP280 range (max ~16 psi / 1100 hPa).
+   Temperatures in °C within BMP280 range (0-65 °C, kept 15-45 for realism). */
 const sensorSeeds = [
-  { id:"VLT-001", facility:"Fab 1",           location:"Coolant Loop A",       basePressure:42, baseTemp:24, status:"ok",     firmware:"v0.9.2", lastService:"2026-05-12", nextService:"2026-11-12", rssi:-52 },
-  { id:"VLT-002", facility:"Solar OEM",       location:"Process Utility Line B",basePressure:58, baseTemp:41, status:"warn",   firmware:"v0.9.1", lastService:"2025-12-01", nextService:"2026-06-01 (OVERDUE)", rssi:-71 },
-  { id:"VLT-003", facility:"Battery OEM",     location:"Thermal Loop C",       basePressure:12, baseTemp:22, status:"danger", firmware:"v0.9.2", lastService:"2026-03-18", nextService:"2026-09-18", leak:true,  rssi:-85 },
-  { id:"VLT-004", facility:"Industrial Util", location:"Chilled Water Line D", basePressure:45, baseTemp:18, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-02", nextService:"2026-12-02", rssi:-58 },
-  { id:"VLT-005", facility:"Fab 2",           location:"Deionized Water Loop", basePressure:48, baseTemp:27, status:"ok",     firmware:"v0.9.2", lastService:"2026-05-28", nextService:"2026-11-28", rssi:-49 },
-  { id:"VLT-006", facility:"Battery OEM",     location:"Pack Cooling · Rack 12",basePressure:8, baseTemp:19, status:"danger", firmware:"v0.9.1", lastService:"2026-02-14", nextService:"2026-08-14", leak:true,  rssi:-92 },
-  { id:"VLT-007", facility:"Fab 1",           location:"Coolant Loop B",       basePressure:44, baseTemp:25, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-10", nextService:"2026-12-10", rssi:-55 },
-  { id:"VLT-008", facility:"Fab 2",           location:"UPW Return Header",    basePressure:39, baseTemp:23, status:"ok",     firmware:"v0.9.2", lastService:"2026-04-22", nextService:"2026-10-22", rssi:-63 },
-  { id:"VLT-009", facility:"Solar OEM",       location:"Slurry Feed Manifold", basePressure:51, baseTemp:32, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-15", nextService:"2026-12-15", rssi:-67 },
-  { id:"VLT-010", facility:"Industrial Util", location:"Cooling Tower Return", basePressure:37, baseTemp:29, status:"ok",     firmware:"v0.9.1", lastService:"2026-05-05", nextService:"2026-11-05", rssi:-60 },
-  { id:"VLT-011", facility:"Fab 1",           location:"Wafer Chuck Coolant",  basePressure:46, baseTemp:22, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-20", nextService:"2026-12-20", rssi:-51 },
-  { id:"VLT-012", facility:"Fab 2",           location:"Etch Tool Chiller",    basePressure:43, baseTemp:16, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-18", nextService:"2026-12-18", rssi:-57 },
-  { id:"VLT-013", facility:"Battery OEM",     location:"Pack Cooling · Rack 4",basePressure:41, baseTemp:24, status:"ok",     firmware:"v0.9.2", lastService:"2026-05-30", nextService:"2026-11-30", rssi:-73 },
-  { id:"VLT-014", facility:"Solar OEM",       location:"Anneal Chiller Line",  basePressure:47, baseTemp:33, status:"warn",   firmware:"v0.9.1", lastService:"2025-11-15", nextService:"2026-05-15 (OVERDUE)", rssi:-79 },
-  { id:"VLT-015", facility:"Industrial Util", location:"Boiler Feed Water",    basePressure:52, baseTemp:31, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-25", nextService:"2026-12-25", rssi:-64 },
-  { id:"VLT-016", facility:"Fab 1",           location:"Vacuum Pump Coolant",  basePressure:40, baseTemp:26, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-08", nextService:"2026-12-08", rssi:-54 },
+  { id:"VLT-001", facility:"Fab 1",           location:"Coolant Loop A",       basePressure:11, baseTemp:24, status:"ok",     firmware:"v0.9.2", lastService:"2026-05-12", nextService:"2026-11-12", rssi:-52 },
+  { id:"VLT-002", facility:"Solar OEM",       location:"Process Utility Line B",basePressure:15, baseTemp:41, status:"warn",   firmware:"v0.9.1", lastService:"2025-12-01", nextService:"2026-06-01 (OVERDUE)", rssi:-71 },
+  { id:"VLT-003", facility:"Battery OEM",     location:"Thermal Loop C",       basePressure:3,  baseTemp:22, status:"danger", firmware:"v0.9.2", lastService:"2026-03-18", nextService:"2026-09-18", leak:true,  rssi:-85 },
+  { id:"VLT-004", facility:"Industrial Util", location:"Chilled Water Line D", basePressure:12, baseTemp:18, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-02", nextService:"2026-12-02", rssi:-58 },
+  { id:"VLT-005", facility:"Fab 2",           location:"Deionized Water Loop", basePressure:13, baseTemp:27, status:"ok",     firmware:"v0.9.2", lastService:"2026-05-28", nextService:"2026-11-28", rssi:-49 },
+  { id:"VLT-006", facility:"Battery OEM",     location:"Pack Cooling · Rack 12",basePressure:2, baseTemp:19, status:"danger", firmware:"v0.9.1", lastService:"2026-02-14", nextService:"2026-08-14", leak:true,  rssi:-92 },
+  { id:"VLT-007", facility:"Fab 1",           location:"Coolant Loop B",       basePressure:11, baseTemp:25, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-10", nextService:"2026-12-10", rssi:-55 },
+  { id:"VLT-008", facility:"Fab 2",           location:"UPW Return Header",    basePressure:10, baseTemp:23, status:"ok",     firmware:"v0.9.2", lastService:"2026-04-22", nextService:"2026-10-22", rssi:-63 },
+  { id:"VLT-009", facility:"Solar OEM",       location:"Slurry Feed Manifold", basePressure:12, baseTemp:32, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-15", nextService:"2026-12-15", rssi:-67 },
+  { id:"VLT-010", facility:"Industrial Util", location:"Cooling Tower Return", basePressure:10, baseTemp:29, status:"ok",     firmware:"v0.9.1", lastService:"2026-05-05", nextService:"2026-11-05", rssi:-60 },
+  { id:"VLT-011", facility:"Fab 1",           location:"Wafer Chuck Coolant",  basePressure:12, baseTemp:22, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-20", nextService:"2026-12-20", rssi:-51 },
+  { id:"VLT-012", facility:"Fab 2",           location:"Etch Tool Chiller",    basePressure:11, baseTemp:16, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-18", nextService:"2026-12-18", rssi:-57 },
+  { id:"VLT-013", facility:"Battery OEM",     location:"Pack Cooling · Rack 4",basePressure:11, baseTemp:24, status:"ok",     firmware:"v0.9.2", lastService:"2026-05-30", nextService:"2026-11-30", rssi:-73 },
+  { id:"VLT-014", facility:"Solar OEM",       location:"Anneal Chiller Line",  basePressure:15, baseTemp:33, status:"warn",   firmware:"v0.9.1", lastService:"2025-11-15", nextService:"2026-05-15 (OVERDUE)", rssi:-79 },
+  { id:"VLT-015", facility:"Industrial Util", location:"Boiler Feed Water",    basePressure:13, baseTemp:31, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-25", nextService:"2026-12-25", rssi:-64 },
+  { id:"VLT-016", facility:"Fab 1",           location:"Vacuum Pump Coolant",  basePressure:11, baseTemp:26, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-08", nextService:"2026-12-08", rssi:-54 },
 ];
 
 const sensors = sensorSeeds.map(seed => {
   const s = { ...seed };
   s.leak = !!seed.leak;
-  s.pressureNominal = [35, 55];
+  s.pressureNominal = [8, 14];
   s.tempNominal = [15, 35];
   s.pressure = seed.basePressure;
   s.temperature = seed.baseTemp;
-  s.harvestMw = seed.status === "danger" ? 0.4 : rand(2, 3.5);
+  s.harvestUw = seed.status === "danger" ? rand(6, 14) : rand(30, 85);
   s.pHist = Array(HISTORY_LEN).fill(s.pressure);
   s.tHist = Array(HISTORY_LEN).fill(s.temperature);
   s.acknowledged = false;
@@ -1123,7 +1125,8 @@ function kpiFrame() {
     $(`k-${k}`).textContent = Math.round(kpiTweenShown[k]);
   });
   displayedEnergy += (totalEnergyWh - displayedEnergy) * 0.15;
-  $("k-energy").innerHTML = `${fmt(displayedEnergy, 3)} <span class="munit">Wh</span>`;
+  const uWh = displayedEnergy * 1e6;
+  $("k-energy").innerHTML = `${fmt(uWh, 1)} <span class="munit">µWh</span>`;
 }
 
 /* -------- Sparkline SVG -------- */
@@ -1524,11 +1527,11 @@ function renderDetail(id) {
             </div>
             <div>
               <div class="bigm-label">Energy Harvesting</div>
-              <div class="bigm-val" style="font-size:20px" id="d-harvest">${fmt(s.harvestMw, 2)} <span class="bigm-unit">mW</span></div>
+              <div class="bigm-val" style="font-size:20px" id="d-harvest">${Math.round(s.harvestUw)} <span class="bigm-unit">µW</span></div>
             </div>
           </div>
           <div class="gauge-fit-wrap">
-            <div id="d-gauge">${gaugeSVG(s.pressure, 0, 80, gaugeColor)}</div>
+            <div id="d-gauge">${gaugeSVG(s.pressure, 0, 16, gaugeColor)}</div>
             <div id="d-fitting">${fittingSVG(s)}</div>
           </div>
           <h3 style="margin-top:20px">Pressure History &middot; anomaly-detection band</h3>
@@ -1585,7 +1588,7 @@ function renderDetail(id) {
   const clr = $("act-clear");
   if (clr) clr.addEventListener("click", () => {
     s.status = "ok"; s.leak = false; s.acknowledged = false;
-    s.pressure = s.basePressure; s.harvestMw = 2.5;
+    s.pressure = s.basePressure; s.harvestUw = 45;
     logEvent(s, "ok", "Fault cleared, unit restored to nominal");
     toast("ok", `${s.id} restored`, "Unit back online");
     renderDetail(id); renderGrid(); renderTopology(); updateKPIs();
@@ -1605,10 +1608,10 @@ function refreshDetailNumbers() {
   const dp = $("d-pressure"), dt = $("d-temp"), dh = $("d-harvest"), dg = $("d-gauge");
   if (dp) dp.innerHTML = `${pDisp(s.pressure)}<span class="bigm-unit">${pUnit()}</span>`;
   if (dt) dt.innerHTML = `${tDisp(s.temperature)}<span class="bigm-unit">${tUnit()}</span>`;
-  if (dh) dh.innerHTML = `${fmt(s.harvestMw, 2)} <span class="bigm-unit">mW</span>`;
+  if (dh) dh.innerHTML = `${Math.round(s.harvestUw)} <span class="bigm-unit">µW</span>`;
   if (dg) {
     const gaugeColor = s.status === "danger" ? "#ff1f2d" : (s.status === "warn" ? "#f5a524" : "#22c55e");
-    dg.innerHTML = gaugeSVG(s.pressure, 0, 80, gaugeColor);
+    dg.innerHTML = gaugeSVG(s.pressure, 0, 16, gaugeColor);
   }
   const cp = $("d-chart-p"), ct = $("d-chart-t");
   if (cp) drawCanvasChart(cp, s.pHist, s.pressureNominal[0], s.pressureNominal[1], "#ff1f2d", pDisp, pUnit());
@@ -1706,9 +1709,9 @@ function switchTab(name) {
   window.scrollTo(0, 0);
 }
 function renderWhyLive() {
-  const totalMw = sensors.reduce((s, x) => s + x.harvestMw, 0);
+  const totalUw = sensors.reduce((acc, x) => acc + x.harvestUw, 0);
   const el = $("wy-mw");
-  if (el) el.textContent = totalMw.toFixed(1) + " mW";
+  if (el) el.textContent = Math.round(totalUw) + " µW";
 }
 document.querySelectorAll(".tab").forEach(t => {
   t.addEventListener("click", () => switchTab(t.dataset.tab));
@@ -1756,9 +1759,9 @@ function triggerLeak(specificId) {
   if (!target) { toast("warn", "No healthy sensor", "All units already in alarm state."); return; }
   target.status = "danger";
   target.leak = true;
-  target.pressure = rand(6, 14);
-  target.harvestMw = 0.3;
-  target.rssi = clamp(target.rssi - 20, -100, -30);
+  target.pressure = rand(1, 4);
+  target.harvestUw = rand(4, 10);
+  target.rssi = clamp(Math.round(target.rssi - 20), -100, -30);
   logEvent(target, "danger", "LEAK DETECTED — pressure collapse from nominal");
   toast("danger", `LEAK · ${target.id}`, `${target.facility} · ${target.location}`);
   beep();
@@ -1825,8 +1828,8 @@ function runInstall() {
   const lines = [
     { t: 50,   msg: `[00:00.1] Volturn V1 seated on ${location}`, cls: "" },
     { t: 700,  msg: `[00:00.7] Fluid seal verified (torque 22 N·m)`, cls: "" },
-    { t: 1200, msg: `[00:01.2] Piezo harvester active — 2.8 mW`, cls: "" },
-    { t: 1700, msg: `[00:01.7] Supercap charged to 3.3 V`, cls: "" },
+    { t: 1200, msg: `[00:01.2] Piezo harvester active — 45 µW`, cls: "" },
+    { t: 1700, msg: `[00:01.7] Supercap charged to 2.4 V`, cls: "" },
     { t: 2200, msg: `[00:02.2] BLE 5.0 advertisement started`, cls: "" },
     { t: 2700, msg: `[00:02.7] Self-diagnostic OK`, cls: "" },
     { t: 3200, msg: `${id} ONLINE  ·  no wire  ·  no battery`, cls: "done" },
@@ -1843,15 +1846,15 @@ function runInstall() {
     // Add the new sensor to the fleet
     const newSensor = {
       id, facility, location,
-      basePressure: 42, baseTemp: 24,
-      pressureNominal: [35, 55], tempNominal: [15, 35],
-      pressure: 42, temperature: 24,
+      basePressure: 11, baseTemp: 24,
+      pressureNominal: [8, 14], tempNominal: [15, 35],
+      pressure: 11, temperature: 24,
       status: "ok", leak: false, acknowledged: false,
       firmware: "v0.9.2",
       lastService: new Date().toISOString().slice(0, 10),
       nextService: new Date(Date.now() + 180 * 86400000).toISOString().slice(0, 10),
-      rssi: -55, harvestMw: 2.8,
-      pHist: Array(HISTORY_LEN).fill(42),
+      rssi: -55, harvestUw: 45,
+      pHist: Array(HISTORY_LEN).fill(11),
       tHist: Array(HISTORY_LEN).fill(24),
       events: [{ t: now(), kind: "ok", msg: "Unit deployed — first advertisement received" }]
     };
@@ -1937,8 +1940,8 @@ $("btn-reset").addEventListener("click", () => {
 
 /* -------- Export CSV -------- */
 $("btn-export").addEventListener("click", () => {
-  const rows = [["id","facility","location","status","leak","pressure_psi","temperature_c","harvest_mw","rssi_dbm","firmware","next_service"]];
-  sensors.forEach(s => rows.push([s.id, s.facility, s.location, s.status, s.leak, fmt(s.pressure), fmt(s.temperature), fmt(s.harvestMw,2), s.rssi, s.firmware, s.nextService]));
+  const rows = [["id","facility","location","status","leak","pressure_psi","temperature_c","harvest_uw","rssi_dbm","firmware","next_service"]];
+  sensors.forEach(s => rows.push([s.id, s.facility, s.location, s.status, s.leak, fmt(s.pressure, 1), fmt(s.temperature, 1), Math.round(s.harvestUw), s.rssi, s.firmware, s.nextService]));
   const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
@@ -2200,21 +2203,23 @@ document.addEventListener("keydown", (e) => {
 function tick() {
   if (replayMode) return;
   sensors.forEach(s => {
-    const pJit = (Math.random() - 0.5) * 1.4;
-    const tJit = (Math.random() - 0.5) * 0.7;
+    const pJit = (Math.random() - 0.5) * 0.4;   // ±0.2 psi wobble
+    const tJit = (Math.random() - 0.5) * 0.6;   // ±0.3 °C wobble
     if (s.leak) {
-      s.pressure = clamp(s.pressure + pJit * 0.3, 2, 20);
-      s.temperature += tJit * 0.5;
-      s.harvestMw = clamp(0.3 + Math.random() * 0.3, 0.1, 1);
+      s.pressure  = clamp(s.pressure + pJit * 0.5, 0.5, 6);
+      s.temperature = clamp(s.temperature + tJit * 0.5, 15, 45);
+      s.harvestUw = clamp(5 + Math.random() * 8, 2, 15);  // low flow → low harvest
     } else {
-      s.pressure = s.basePressure + pJit + (s.status === "warn" ? 3 : 0);
-      s.temperature = s.baseTemp + tJit + (s.status === "warn" ? 6 : 0);
-      s.harvestMw = 2 + Math.random() * 1.5;
+      const warnBumpP = s.status === "warn" ? 1 : 0;
+      const warnBumpT = s.status === "warn" ? 3 : 0;
+      s.pressure    = clamp(s.basePressure + pJit + warnBumpP, 0, 16);
+      s.temperature = clamp(s.baseTemp + tJit + warnBumpT, 15, 45);
+      s.harvestUw   = 30 + Math.random() * 55;  // 30-85 µW nominal
     }
-    s.rssi = clamp(s.rssi + (Math.random() - 0.5) * 3, -100, -35);
+    s.rssi = clamp(Math.round(s.rssi + (Math.random() - 0.5) * 3), -100, -35);
     s.pHist.push(s.pressure); if (s.pHist.length > HISTORY_LEN) s.pHist.shift();
     s.tHist.push(s.temperature); if (s.tHist.length > HISTORY_LEN) s.tHist.shift();
-    totalEnergyWh += (s.harvestMw / 1000) * (TICK_MS / 1000) / 3600;
+    totalEnergyWh += (s.harvestUw / 1e6) * (TICK_MS / 1000) / 3600;
   });
   replayBuffer.push(snapshot());
   if (replayBuffer.length > REPLAY_LEN) replayBuffer.shift();
