@@ -210,11 +210,19 @@
   .grid.compact { grid-template-columns: 1fr; gap: 6px; }
   .card {
     position: relative; background: linear-gradient(180deg, var(--panel) 0%, #060606 100%); border: 1px solid var(--border);
-    border-radius: 14px; padding: 18px; cursor: pointer;
-    transition: transform 0.2s ease, border-color 0.2s ease;
-    contain: layout style paint;
+    border-radius: 16px; padding: 18px 18px 18px 22px; cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    contain: layout style paint; overflow: hidden;
   }
-  .card:hover { transform: translateY(-2px); border-color: var(--border-2); }
+  .card::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 4px; background: var(--liq-color, var(--muted));
+    box-shadow: 0 0 12px var(--liq-color, transparent);
+    opacity: 0.85;
+  }
+  .card:hover { transform: translateY(-3px); border-color: var(--border-2); box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+  .card.isolated { opacity: 0.65; filter: saturate(0.4); }
+  .card.isolated::before { background: var(--muted); box-shadow: none; }
   .card:active { transform: translateY(0); }
   .card.danger { border-color: var(--danger); }
   .card.danger::after {
@@ -258,6 +266,10 @@
   .facility-tag {
     display: inline-block; font-size: 10px; color: var(--text-dim);
     background: var(--panel-2); padding: 3px 8px; border-radius: 4px;
+  }
+  .liq-tag {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.4px;
+    padding: 3px 8px; border-radius: 4px; border: 1px solid;
   }
   .rssi { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; }
   .rssi span { width: 3px; background: var(--muted); border-radius: 1px; }
@@ -320,7 +332,15 @@
   .panel {
     background: linear-gradient(180deg, var(--panel) 0%, #060606 100%);
     border: 1px solid var(--border);
-    border-radius: 14px; padding: 20px; contain: layout style;
+    border-radius: 16px; padding: 22px; contain: layout style;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.02);
+  }
+  .liquid-panel { position: relative; }
+  .liquid-panel::before {
+    content: ""; position: absolute; top: 0; right: 0;
+    width: 80px; height: 80px; border-radius: 0 16px 0 100%;
+    background: radial-gradient(circle at top right, currentColor, transparent 70%);
+    opacity: 0.04; pointer-events: none;
   }
   .panel h3 {
     margin: 0 0 14px 0; font-size: 12px; text-transform: uppercase;
@@ -691,6 +711,9 @@
       <select id="facility-filter">
         <option value="all">All facilities</option>
       </select>
+      <select id="liquid-filter">
+        <option value="all">All fluids</option>
+      </select>
       <select id="sort">
         <option value="priority">Sort: Priority</option>
         <option value="id">Sort: ID</option>
@@ -864,6 +887,12 @@
       </div>
     </div>
 
+    <div class="why-diagram-wrap" style="margin-bottom:24px">
+      <h3>Fluids Volturn ships for today</h3>
+      <p>Each Volturn variant is calibrated for its fluid's ideal pressure and temperature band. Colour-coded on this dashboard.</p>
+      <div id="fluid-palette" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-top:10px"></div>
+    </div>
+
     <div class="why-compare">
       <h3>Volturn vs the alternatives</h3>
       <table>
@@ -980,32 +1009,47 @@ const tDisp = (t) => unitMode === "metric" ? fmt(t, 1) : fmt(cToF(t), 1);
 const tUnit = () => unitMode === "metric" ? "°C" : "°F";
 
 /* -------- Fleet seed -------- */
-/* Pressures in psi within BMP280 range (max ~16 psi / 1100 hPa).
-   Temperatures in °C within BMP280 range (0-65 °C, kept 15-45 for realism). */
+/* Liquid catalogue — each liquid drives its own colour, ideal pressure and
+   temperature ranges, criticality note, and a plain-English description. */
+const liquidTypes = {
+  chilled_water:   { name:"Chilled Water",      short:"Chilled H₂O", color:"#4dc9ff", idealP:[35, 50], idealT:[6, 20],   critHours:"$12k / hr", desc:"Facility-wide cooling loop. Every downstream tool warms up when this drops." },
+  process_coolant: { name:"Process Coolant",    short:"Coolant",     color:"#4dd6ff", idealP:[40, 55], idealT:[15, 30],  critHours:"$18k / hr", desc:"Wafer-chuck cooling. Pressure stability is critical for lithographic alignment." },
+  di_water:        { name:"Deionized Water",    short:"UPW",         color:"#7de8ff", idealP:[40, 55], idealT:[18, 28],  critHours:"$40k / hr", desc:"Ultra-pure water for wafer rinse. Contamination or drop = scrapped wafer lots." },
+  glycol:          { name:"Glycol Coolant",     short:"Glycol",      color:"#a3ff4d", idealP:[40, 55], idealT:[10, 35],  critHours:"$8k / hr",  desc:"Ethylene-glycol mix for sub-zero cooling. Corrosive and slick on leak." },
+  process_water:   { name:"Process Water",      short:"Process H₂O", color:"#4dffbb", idealP:[30, 50], idealT:[20, 45],  critHours:"$6k / hr",  desc:"General utility water. Widest operating band of any line." },
+  slurry:          { name:"CMP Slurry",         short:"Slurry",      color:"#c9a8ff", idealP:[30, 45], idealT:[22, 35],  critHours:"$25k / hr", desc:"Abrasive polishing slurry. Sedimentation on flow loss damages tools within minutes." },
+  dielectric:      { name:"Dielectric Coolant", short:"Diel-Cool",   color:"#4de7ff", idealP:[35, 50], idealT:[15, 30],  critHours:"$60k / hr", desc:"Non-conductive coolant for battery packs. Loss risks thermal runaway of the pack." },
+  thermal_oil:     { name:"Thermal Oil",        short:"Therm-Oil",   color:"#ff9944", idealP:[30, 45], idealT:[25, 45],  critHours:"$15k / hr", desc:"High-temperature heat-transfer fluid. Leak is a fire hazard." },
+  boiler_feed:     { name:"Boiler Feed Water",  short:"Boiler FW",   color:"#ffcf4d", idealP:[45, 60], idealT:[25, 50],  critHours:"$10k / hr", desc:"Pre-boiler treated water. A pressure spike here means an upstream valve issue." },
+};
+
 const sensorSeeds = [
-  { id:"VLT-001", facility:"Fab 1",           location:"Coolant Loop A",       basePressure:11, baseTemp:24, status:"ok",     firmware:"v0.9.2", lastService:"2026-05-12", nextService:"2026-11-12", rssi:-52 },
-  { id:"VLT-002", facility:"Solar OEM",       location:"Process Utility Line B",basePressure:15, baseTemp:41, status:"warn",   firmware:"v0.9.1", lastService:"2025-12-01", nextService:"2026-06-01 (OVERDUE)", rssi:-71 },
-  { id:"VLT-003", facility:"Battery OEM",     location:"Thermal Loop C",       basePressure:3,  baseTemp:22, status:"danger", firmware:"v0.9.2", lastService:"2026-03-18", nextService:"2026-09-18", leak:true,  rssi:-85 },
-  { id:"VLT-004", facility:"Industrial Util", location:"Chilled Water Line D", basePressure:12, baseTemp:18, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-02", nextService:"2026-12-02", rssi:-58 },
-  { id:"VLT-005", facility:"Fab 2",           location:"Deionized Water Loop", basePressure:13, baseTemp:27, status:"ok",     firmware:"v0.9.2", lastService:"2026-05-28", nextService:"2026-11-28", rssi:-49 },
-  { id:"VLT-006", facility:"Battery OEM",     location:"Pack Cooling · Rack 12",basePressure:2, baseTemp:19, status:"danger", firmware:"v0.9.1", lastService:"2026-02-14", nextService:"2026-08-14", leak:true,  rssi:-92 },
-  { id:"VLT-007", facility:"Fab 1",           location:"Coolant Loop B",       basePressure:11, baseTemp:25, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-10", nextService:"2026-12-10", rssi:-55 },
-  { id:"VLT-008", facility:"Fab 2",           location:"UPW Return Header",    basePressure:10, baseTemp:23, status:"ok",     firmware:"v0.9.2", lastService:"2026-04-22", nextService:"2026-10-22", rssi:-63 },
-  { id:"VLT-009", facility:"Solar OEM",       location:"Slurry Feed Manifold", basePressure:12, baseTemp:32, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-15", nextService:"2026-12-15", rssi:-67 },
-  { id:"VLT-010", facility:"Industrial Util", location:"Cooling Tower Return", basePressure:10, baseTemp:29, status:"ok",     firmware:"v0.9.1", lastService:"2026-05-05", nextService:"2026-11-05", rssi:-60 },
-  { id:"VLT-011", facility:"Fab 1",           location:"Wafer Chuck Coolant",  basePressure:12, baseTemp:22, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-20", nextService:"2026-12-20", rssi:-51 },
-  { id:"VLT-012", facility:"Fab 2",           location:"Etch Tool Chiller",    basePressure:11, baseTemp:16, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-18", nextService:"2026-12-18", rssi:-57 },
-  { id:"VLT-013", facility:"Battery OEM",     location:"Pack Cooling · Rack 4",basePressure:11, baseTemp:24, status:"ok",     firmware:"v0.9.2", lastService:"2026-05-30", nextService:"2026-11-30", rssi:-73 },
-  { id:"VLT-014", facility:"Solar OEM",       location:"Anneal Chiller Line",  basePressure:15, baseTemp:33, status:"warn",   firmware:"v0.9.1", lastService:"2025-11-15", nextService:"2026-05-15 (OVERDUE)", rssi:-79 },
-  { id:"VLT-015", facility:"Industrial Util", location:"Boiler Feed Water",    basePressure:13, baseTemp:31, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-25", nextService:"2026-12-25", rssi:-64 },
-  { id:"VLT-016", facility:"Fab 1",           location:"Vacuum Pump Coolant",  basePressure:11, baseTemp:26, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-08", nextService:"2026-12-08", rssi:-54 },
+  { id:"VLT-001", facility:"Fab 1",           location:"Coolant Loop A",         liquid:"process_coolant", basePressure:42, baseTemp:24, status:"ok",     firmware:"v0.9.2", lastService:"2026-05-12", nextService:"2026-11-12", rssi:-52 },
+  { id:"VLT-002", facility:"Solar OEM",       location:"Process Utility Line B", liquid:"process_water",   basePressure:58, baseTemp:41, status:"warn",   firmware:"v0.9.1", lastService:"2025-12-01", nextService:"2026-06-01 (OVERDUE)", rssi:-71 },
+  { id:"VLT-003", facility:"Battery OEM",     location:"Thermal Loop C",         liquid:"dielectric",      basePressure:12, baseTemp:22, status:"danger", firmware:"v0.9.2", lastService:"2026-03-18", nextService:"2026-09-18", leak:true,  rssi:-85 },
+  { id:"VLT-004", facility:"Industrial Util", location:"Chilled Water Line D",   liquid:"chilled_water",   basePressure:45, baseTemp:14, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-02", nextService:"2026-12-02", rssi:-58 },
+  { id:"VLT-005", facility:"Fab 2",           location:"Deionized Water Loop",   liquid:"di_water",        basePressure:48, baseTemp:24, status:"ok",     firmware:"v0.9.2", lastService:"2026-05-28", nextService:"2026-11-28", rssi:-49 },
+  { id:"VLT-006", facility:"Battery OEM",     location:"Pack Cooling · Rack 12", liquid:"dielectric",      basePressure:8,  baseTemp:19, status:"danger", firmware:"v0.9.1", lastService:"2026-02-14", nextService:"2026-08-14", leak:true,  rssi:-92 },
+  { id:"VLT-007", facility:"Fab 1",           location:"Coolant Loop B",         liquid:"process_coolant", basePressure:44, baseTemp:25, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-10", nextService:"2026-12-10", rssi:-55 },
+  { id:"VLT-008", facility:"Fab 2",           location:"UPW Return Header",      liquid:"di_water",        basePressure:47, baseTemp:23, status:"ok",     firmware:"v0.9.2", lastService:"2026-04-22", nextService:"2026-10-22", rssi:-63 },
+  { id:"VLT-009", facility:"Solar OEM",       location:"Slurry Feed Manifold",   liquid:"slurry",          basePressure:39, baseTemp:28, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-15", nextService:"2026-12-15", rssi:-67 },
+  { id:"VLT-010", facility:"Industrial Util", location:"Cooling Tower Return",   liquid:"process_water",   basePressure:37, baseTemp:29, status:"ok",     firmware:"v0.9.1", lastService:"2026-05-05", nextService:"2026-11-05", rssi:-60 },
+  { id:"VLT-011", facility:"Fab 1",           location:"Wafer Chuck Coolant",    liquid:"process_coolant", basePressure:46, baseTemp:22, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-20", nextService:"2026-12-20", rssi:-51 },
+  { id:"VLT-012", facility:"Fab 2",           location:"Etch Tool Chiller",      liquid:"chilled_water",   basePressure:43, baseTemp:12, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-18", nextService:"2026-12-18", rssi:-57 },
+  { id:"VLT-013", facility:"Battery OEM",     location:"Pack Cooling · Rack 4",  liquid:"dielectric",      basePressure:41, baseTemp:24, status:"ok",     firmware:"v0.9.2", lastService:"2026-05-30", nextService:"2026-11-30", rssi:-73 },
+  { id:"VLT-014", facility:"Solar OEM",       location:"Anneal Chiller Line",    liquid:"thermal_oil",     basePressure:47, baseTemp:38, status:"warn",   firmware:"v0.9.1", lastService:"2025-11-15", nextService:"2026-05-15 (OVERDUE)", rssi:-79 },
+  { id:"VLT-015", facility:"Industrial Util", location:"Boiler Feed Water",      liquid:"boiler_feed",     basePressure:52, baseTemp:31, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-25", nextService:"2026-12-25", rssi:-64 },
+  { id:"VLT-016", facility:"Fab 1",           location:"Vacuum Pump Coolant",    liquid:"glycol",          basePressure:40, baseTemp:26, status:"ok",     firmware:"v0.9.2", lastService:"2026-06-08", nextService:"2026-12-08", rssi:-54 },
 ];
 
 const sensors = sensorSeeds.map(seed => {
   const s = { ...seed };
   s.leak = !!seed.leak;
-  s.pressureNominal = [8, 14];
-  s.tempNominal = [15, 35];
+  s.isolated = false;
+  const liq = liquidTypes[seed.liquid] || liquidTypes.process_water;
+  s.liquidObj = liq;
+  s.pressureNominal = liq.idealP;
+  s.tempNominal = liq.idealT;
   s.pressure = seed.basePressure;
   s.temperature = seed.baseTemp;
   s.harvestUw = seed.status === "danger" ? rand(6, 14) : rand(30, 85);
@@ -1055,6 +1099,7 @@ let kpiTweenShown = { ok: 0, warn: 0, danger: 0 };
 let searchQuery = "";
 let filterStatus = "all";
 let filterFacility = "all";
+let filterLiquid = "all";
 let sortKey = "priority";
 let viewMode = "cards";     // 'cards' | 'compact'
 let muted = false;
@@ -1077,6 +1122,11 @@ facilities.forEach(f => {
   const opt = document.createElement("option");
   opt.value = f; opt.textContent = f;
   $("facility-filter").appendChild(opt);
+});
+Object.entries(liquidTypes).forEach(([key, l]) => {
+  const opt = document.createElement("option");
+  opt.value = key; opt.textContent = l.name;
+  $("liquid-filter").appendChild(opt);
 });
 
 /* -------- Preferences (localStorage) -------- */
@@ -1165,6 +1215,7 @@ function rssiClass(rssi) {
 function passesFilter(s) {
   if (filterStatus !== "all" && s.status !== filterStatus) return false;
   if (filterFacility !== "all" && s.facility !== filterFacility) return false;
+  if (filterLiquid !== "all" && s.liquid !== filterLiquid) return false;
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     if (!s.id.toLowerCase().includes(q) && !s.location.toLowerCase().includes(q) && !s.facility.toLowerCase().includes(q)) return false;
@@ -1198,19 +1249,22 @@ function renderGrid() {
   }
   if (viewMode === "compact") {
     grid.innerHTML = list.map(s => {
-      const badgeText = s.leak ? "LEAK" : (s.status === "warn" ? "SERVICE" : "OK");
-      return `<div class="card row ${s.status === 'danger' ? 'danger' : s.status === 'warn' ? 'warn' : ''}" data-id="${esc(s.id)}">
+      const badgeText = s.isolated ? "ISOLATED" : s.leak ? "LEAK" : (s.status === "warn" ? "SERVICE" : "OK");
+      const badgeCls  = s.isolated ? "warn" : s.status;
+      const liqColor  = s.liquidObj.color;
+      return `<div class="card row ${s.isolated ? 'isolated' : ''} ${s.status === 'danger' ? 'danger' : s.status === 'warn' ? 'warn' : ''}" data-id="${esc(s.id)}" style="--liq-color:${liqColor}">
         <div class="card-hd">
-          <div style="display:flex;align-items:center;gap:14px;min-width:0">
+          <div style="display:flex;align-items:center;gap:12px;min-width:0">
             <span class="card-title" style="min-width:70px">${esc(s.id)}</span>
-            <span class="card-loc" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px">${esc(s.location)}</span>
+            <span class="liq-tag" style="color:${liqColor};border-color:${liqColor}40;background:${liqColor}12">${esc(s.liquidObj.short)}</span>
+            <span class="card-loc" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px">${esc(s.location)}</span>
             <span class="facility-tag">${esc(s.facility)}</span>
           </div>
           <div class="row-inline">
             <span>${pDisp(s.pressure)} ${pUnit()}</span>
             <span>${tDisp(s.temperature)} ${tUnit()}</span>
             <span class="rssi ${rssiClass(s.rssi)}"><span></span><span></span><span></span><span></span></span>
-            <span class="badge ${s.status}">${badgeText}</span>
+            <span class="badge ${badgeCls}">${badgeText}</span>
           </div>
         </div>
       </div>`;
@@ -1218,16 +1272,18 @@ function renderGrid() {
     return;
   }
   const html = list.map(s => {
-    const badgeText = s.leak ? "LEAK" : (s.status === "warn" ? "SERVICE" : "OK");
-    const pColor = s.status === "danger" ? "#ff1f2d" : (s.status === "warn" ? "#f5a524" : "#22c55e");
+    const badgeText = s.isolated ? "ISOLATED" : s.leak ? "LEAK" : (s.status === "warn" ? "SERVICE" : "OK");
+    const badgeCls  = s.isolated ? "warn" : s.status;
+    const liqColor  = s.liquidObj.color;
+    const pColor    = s.status === "danger" ? "#ff1f2d" : (s.status === "warn" ? "#f5a524" : liqColor);
     return `
-      <div class="card ${s.status === "danger" ? "danger" : s.status === "warn" ? "warn" : ""}" data-id="${esc(s.id)}">
+      <div class="card ${s.isolated ? 'isolated' : ''} ${s.status === "danger" ? "danger" : s.status === "warn" ? "warn" : ""}" data-id="${esc(s.id)}" style="--liq-color:${liqColor}">
         <div class="card-hd">
           <div>
             <div class="card-title">${esc(s.id)}</div>
             <div class="card-loc">${esc(s.location)}</div>
           </div>
-          <span class="badge ${s.status}">${badgeText}</span>
+          <span class="badge ${badgeCls}">${badgeText}</span>
         </div>
         <div class="card-metrics">
           <div>
@@ -1241,7 +1297,11 @@ function renderGrid() {
         </div>
         ${sparkline(s.pHist, pColor)}
         <div class="card-foot">
-          <div><span class="facility-tag">${esc(s.facility)}</span><span class="self-chip" title="Self-powered · no battery, no wire">&#9889; SELF-POWERED</span></div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span class="liq-tag" style="color:${liqColor};border-color:${liqColor}40;background:${liqColor}12">${esc(s.liquidObj.short)}</span>
+            <span class="facility-tag">${esc(s.facility)}</span>
+            <span class="self-chip" title="Self-powered · no battery, no wire">&#9889;</span>
+          </div>
           <span class="rssi ${rssiClass(s.rssi)}" title="RSSI ${s.rssi} dBm"><span></span><span></span><span></span><span></span></span>
         </div>
       </div>`;
@@ -1274,79 +1334,73 @@ function gaugeSVG(val, min, max, color) {
 
 /* -------- Isometric Volturn fitting SVG with animated flow -------- */
 function fittingSVG(s) {
-  const isLeak = s.leak;
-  const flowColor = isLeak ? "#ff1f2d" : "#4dd6ff";
-  const bodyColor = "#c8a45c"; // brass
-  const bodyShade = "#8a6e3a";
+  const isLeak = s.leak && !s.isolated;
+  const isIsolated = s.isolated;
+  const liquid = s.liquidObj;
+  const flowColor = isLeak ? "#ff1f2d" : liquid.color;
   const w = 480, h = 200;
+  const flowingParticles = !isIsolated ? [0, 1, 2, 3, 4].map(i => `
+        <circle r="3.5" fill="${flowColor}" opacity="0.9">
+          <animate attributeName="cx" from="20" to="460" dur="${isLeak ? '5s' : '2.5s'}" begin="${i * 0.5}s" repeatCount="indefinite"/>
+        </circle>`).join("") : "";
   return `<svg class="fitting-viz" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet">
     <defs>
       <linearGradient id="brassGrad" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="0%" stop-color="#e8c983"/>
-        <stop offset="50%" stop-color="${bodyColor}"/>
-        <stop offset="100%" stop-color="${bodyShade}"/>
+        <stop offset="0%" stop-color="#e8c983"/><stop offset="50%" stop-color="#c8a45c"/><stop offset="100%" stop-color="#8a6e3a"/>
       </linearGradient>
       <linearGradient id="pipeGrad" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="0%" stop-color="#3a3a3a"/>
-        <stop offset="50%" stop-color="#5a5a5a"/>
-        <stop offset="100%" stop-color="#2a2a2a"/>
+        <stop offset="0%" stop-color="#3a3a3a"/><stop offset="50%" stop-color="#5a5a5a"/><stop offset="100%" stop-color="#2a2a2a"/>
+      </linearGradient>
+      <linearGradient id="pipeFill_${s.id}" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="${flowColor}" stop-opacity="${isIsolated ? '0.05' : '0.3'}"/>
+        <stop offset="100%" stop-color="${flowColor}" stop-opacity="${isIsolated ? '0.02' : '0.15'}"/>
       </linearGradient>
       <filter id="leakGlow"><feGaussianBlur stdDeviation="4"/></filter>
     </defs>
-    <!-- Left pipe -->
+    <!-- Left pipe (outer + inner fill for fluid) -->
     <rect x="20" y="80" width="140" height="40" fill="url(#pipeGrad)" stroke="#1a1a1a"/>
-    <line x1="30" y1="82" x2="30" y2="118" stroke="#7a7a7a" stroke-width="1"/>
-    <line x1="150" y1="82" x2="150" y2="118" stroke="#7a7a7a" stroke-width="1"/>
-    <!-- Brass fitting body -->
-    <rect x="160" y="70" width="160" height="60" rx="4" fill="url(#brassGrad)" stroke="#5a4520" stroke-width="1"/>
-    <rect x="170" y="60" width="20" height="10" fill="url(#brassGrad)" stroke="#5a4520"/>
-    <rect x="290" y="60" width="20" height="10" fill="url(#brassGrad)" stroke="#5a4520"/>
-    <!-- Sensor housing (top of fitting) -->
-    <rect x="220" y="30" width="40" height="42" rx="6" fill="#1a1a1a" stroke="#3a3a3a"/>
-    <circle cx="240" cy="42" r="3" fill="#22c55e">
-      <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
-    </circle>
-    <text x="240" y="60" text-anchor="middle" fill="#7a7a7a" font-size="8" font-family="monospace">${esc(s.id)}</text>
-    <!-- BLE radio waves from sensor -->
-    <g opacity="0.6">
-      <path d="M 260 45 Q 275 30 285 45" fill="none" stroke="${flowColor}" stroke-width="1">
-        <animate attributeName="opacity" values="0;0.8;0" dur="1.5s" repeatCount="indefinite"/>
-      </path>
-      <path d="M 260 45 Q 285 20 300 45" fill="none" stroke="${flowColor}" stroke-width="1">
-        <animate attributeName="opacity" values="0;0.6;0" dur="1.5s" begin="0.3s" repeatCount="indefinite"/>
-      </path>
-    </g>
+    <rect x="22" y="92" width="136" height="16" fill="url(#pipeFill_${s.id})"/>
     <!-- Right pipe -->
     <rect x="320" y="80" width="140" height="40" fill="url(#pipeGrad)" stroke="#1a1a1a"/>
-    <line x1="330" y1="82" x2="330" y2="118" stroke="#7a7a7a" stroke-width="1"/>
-    <line x1="450" y1="82" x2="450" y2="118" stroke="#7a7a7a" stroke-width="1"/>
-    <!-- Fluid flow particles inside pipes/fitting -->
-    <g>
-      ${[0, 1, 2, 3, 4].map(i => `
-        <circle r="3" fill="${flowColor}" opacity="0.85">
-          <animate attributeName="cx" from="20" to="460" dur="${isLeak ? '5s' : '2.5s'}" begin="${i * 0.5}s" repeatCount="indefinite"/>
-          <animate attributeName="cy" values="100;100;100" dur="2.5s" repeatCount="indefinite"/>
-        </circle>`).join("")}
+    <rect x="322" y="92" width="136" height="16" fill="url(#pipeFill_${s.id})"/>
+    <!-- Brass fitting body -->
+    <rect x="160" y="70" width="160" height="60" rx="4" fill="url(#brassGrad)" stroke="#5a4520" stroke-width="1"/>
+    <rect x="162" y="92" width="156" height="16" fill="url(#pipeFill_${s.id})"/>
+    <rect x="170" y="60" width="20" height="10" fill="url(#brassGrad)" stroke="#5a4520"/>
+    <rect x="290" y="60" width="20" height="10" fill="url(#brassGrad)" stroke="#5a4520"/>
+    <!-- Sensor housing -->
+    <rect x="220" y="30" width="40" height="42" rx="6" fill="#1a1a1a" stroke="#3a3a3a"/>
+    <circle cx="240" cy="42" r="3" fill="${isIsolated ? '#7a7a7a' : '#22c55e'}">
+      ${!isIsolated ? '<animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>' : ''}
+    </circle>
+    <text x="240" y="60" text-anchor="middle" fill="#7a7a7a" font-size="8" font-family="monospace">${esc(s.id)}</text>
+    <!-- Flow direction arrow (hidden when isolated) -->
+    ${!isIsolated ? `<g opacity="0.6">
+      <path d="M 55 138 L 75 138 M 70 134 L 75 138 L 70 142" stroke="${flowColor}" stroke-width="1.5" fill="none"/>
+      <text x="65" y="152" fill="${flowColor}" font-size="8" text-anchor="middle" font-family="-apple-system,sans-serif">FLOW</text>
+    </g>` : ""}
+    <!-- BLE radio waves -->
+    ${!isIsolated ? `<g opacity="0.6">
+      <path d="M 260 45 Q 275 30 285 45" fill="none" stroke="#ff1f2d" stroke-width="1"><animate attributeName="opacity" values="0;0.8;0" dur="1.5s" repeatCount="indefinite"/></path>
+      <path d="M 260 45 Q 285 20 300 45" fill="none" stroke="#ff1f2d" stroke-width="1"><animate attributeName="opacity" values="0;0.6;0" dur="1.5s" begin="0.3s" repeatCount="indefinite"/></path>
+    </g>` : ""}
+    <!-- Fluid particles -->
+    <g>${flowingParticles.replace(/cy="[0-9]+"/g, 'cy="100"')}
+       ${!isIsolated ? [0,1,2,3,4].map(i => `<circle r="3.5" fill="${flowColor}" opacity="0.9" cy="100"><animate attributeName="cx" from="20" to="460" dur="${isLeak ? '5s' : '2.5s'}" begin="${i * 0.5}s" repeatCount="indefinite"/></circle>`).join("") : ""}
     </g>
     <!-- Leak burst -->
-    ${isLeak ? `
-      <g filter="url(#leakGlow)">
-        <circle cx="240" cy="128" r="6" fill="${flowColor}">
-          <animate attributeName="r" values="4;12;4" dur="0.6s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" values="1;0.3;1" dur="0.6s" repeatCount="indefinite"/>
-        </circle>
+    ${isLeak ? `<g filter="url(#leakGlow)">
+        <circle cx="240" cy="128" r="6" fill="${flowColor}"><animate attributeName="r" values="4;12;4" dur="0.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0.3;1" dur="0.6s" repeatCount="indefinite"/></circle>
       </g>
-      ${[0,1,2,3].map(i => `
-        <circle r="2" fill="${flowColor}" opacity="0.7">
-          <animate attributeName="cx" from="240" to="${210 + i * 15}" dur="1s" begin="${i * 0.15}s" repeatCount="indefinite"/>
-          <animate attributeName="cy" from="130" to="${170 + Math.random() * 20}" dur="1s" begin="${i * 0.15}s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" from="0.9" to="0" dur="1s" begin="${i * 0.15}s" repeatCount="indefinite"/>
-        </circle>`).join("")}
-    ` : ""}
-    <!-- Label -->
-    <text x="240" y="188" text-anchor="middle" fill="#7a7a7a" font-size="10" font-family="-apple-system, sans-serif">
-      Volturn V1 · Brass NPT 1/2" · BLE 5.0 self-powered
-    </text>
+      ${[0,1,2,3].map(i => `<circle r="2" fill="${flowColor}" opacity="0.7"><animate attributeName="cx" from="240" to="${210 + i * 15}" dur="1s" begin="${i * 0.15}s" repeatCount="indefinite"/><animate attributeName="cy" from="130" to="${170 + Math.floor(Math.random() * 20)}" dur="1s" begin="${i * 0.15}s" repeatCount="indefinite"/><animate attributeName="opacity" from="0.9" to="0" dur="1s" begin="${i * 0.15}s" repeatCount="indefinite"/></circle>`).join("")}` : ""}
+    <!-- Isolation valve indicator -->
+    ${isIsolated ? `<g>
+        <rect x="150" y="82" width="14" height="36" rx="2" fill="#ff1f2d" stroke="#7a0e15" stroke-width="1"/>
+        <rect x="316" y="82" width="14" height="36" rx="2" fill="#ff1f2d" stroke="#7a0e15" stroke-width="1"/>
+        <g transform="translate(240,180)"><rect x="-72" y="-14" width="144" height="24" rx="4" fill="rgba(255,31,45,0.15)" stroke="#ff1f2d"/><text x="0" y="2" text-anchor="middle" fill="#ff1f2d" font-size="11" font-weight="800" letter-spacing="2">VALVE CLOSED</text></g>
+      </g>` : `<text x="240" y="188" text-anchor="middle" fill="#7a7a7a" font-size="10" font-family="-apple-system,sans-serif">Volturn V1 · Brass NPT 1/2" · Self-powered</text>`}
+    <!-- Liquid label -->
+    <text x="30" y="76" fill="${liquid.color}" font-size="10" font-weight="700" font-family="-apple-system,sans-serif">${esc(liquid.name.toUpperCase())}</text>
   </svg>`;
 }
 
@@ -1479,14 +1533,19 @@ function renderDetail(id) {
   const tClass = s.temperature < s.tempNominal[0] || s.temperature > s.tempNominal[1] ? "warn" : "";
   const gaugeColor = s.status === "danger" ? "#ff1f2d" : (s.status === "warn" ? "#f5a524" : "#22c55e");
 
-  const actions = s.status === "danger"
+  const actions = s.isolated
+    ? `<button class="btn primary" id="act-restore">&#9654; Restore Flow</button>
+       <button class="btn ghost" id="act-clear">Mark Resolved</button>`
+    : s.status === "danger"
     ? `<button class="btn primary" id="act-ack" ${s.acknowledged ? 'disabled style="opacity:0.5"' : ''}>${s.acknowledged ? '&#10003; Acknowledged' : '&#9888; Acknowledge Alert'}</button>
-       <button class="btn" id="act-isolate">Isolate Line</button>
+       <button class="btn" id="act-isolate">&#9209; Isolate Line</button>
        <button class="btn ghost" id="act-clear">Mark Resolved</button>`
     : s.status === "warn"
     ? `<button class="btn" id="act-service">Schedule Service</button>
+       <button class="btn ghost" id="act-isolate">Isolate Line</button>
        <button class="btn ghost" id="act-clear">Clear Warning</button>`
-    : `<button class="btn ghost" id="act-fault">Force Fault (demo)</button>`;
+    : `<button class="btn ghost" id="act-isolate">Isolate Line</button>
+       <button class="btn ghost" id="act-fault">Force Fault (demo)</button>`;
 
   detailContent.innerHTML = `
     <div class="detail-hd">
@@ -1531,7 +1590,7 @@ function renderDetail(id) {
             </div>
           </div>
           <div class="gauge-fit-wrap">
-            <div id="d-gauge">${gaugeSVG(s.pressure, 0, 16, gaugeColor)}</div>
+            <div id="d-gauge">${gaugeSVG(s.pressure, 0, 80, gaugeColor)}</div>
             <div id="d-fitting">${fittingSVG(s)}</div>
           </div>
           <h3 style="margin-top:20px">Pressure History &middot; anomaly-detection band</h3>
@@ -1542,17 +1601,29 @@ function renderDetail(id) {
       </div>
 
       <div>
+        <div class="panel liquid-panel" style="margin-bottom:16px;border-left:3px solid ${s.liquidObj.color}">
+          <h3 style="color:${s.liquidObj.color}">Fluid &middot; ${esc(s.liquidObj.name)}</h3>
+          <p style="color:var(--text-dim);font-size:13px;line-height:1.55;margin:0 0 12px">${esc(s.liquidObj.desc)}</p>
+          <ul class="maintenance-list">
+            <li><span class="mnt-label">Ideal pressure</span><span>${s.liquidObj.idealP[0]}&ndash;${s.liquidObj.idealP[1]} psi</span></li>
+            <li><span class="mnt-label">Ideal temperature</span><span>${s.liquidObj.idealT[0]}&ndash;${s.liquidObj.idealT[1]} °C</span></li>
+            <li><span class="mnt-label">Cost of downtime</span><span style="color:var(--warn);font-weight:600">${esc(s.liquidObj.critHours)}</span></li>
+            <li><span class="mnt-label">Flow state</span><span class="${s.isolated ? 'mnt-val warn' : ''}">${s.isolated ? 'STOPPED (valve closed)' : 'Flowing'}</span></li>
+          </ul>
+        </div>
+
         <div class="panel" style="margin-bottom:16px">
-          <h3>Maintenance</h3>
+          <h3>Maintenance &amp; Hardware</h3>
           <ul class="maintenance-list">
             <li><span class="mnt-label">Firmware</span><span>${esc(s.firmware)}</span></li>
             <li><span class="mnt-label">Last service</span><span>${esc(s.lastService)}</span></li>
             <li><span class="mnt-label">Next service</span><span class="${s.nextService.includes('OVERDUE') ? 'mnt-val warn' : ''}">${esc(s.nextService)}</span></li>
-            <li><span class="mnt-label">Status</span><span class="${s.leak ? 'mnt-val danger' : (s.status === 'warn' ? 'mnt-val warn' : '')}">${s.leak ? 'ACTION REQUIRED' : (s.status === 'warn' ? 'Service due' : 'OK')}</span></li>
-            <li><span class="mnt-label">Power source</span><span>Self-powered (fluid harvest)</span></li>
+            <li><span class="mnt-label">Status</span><span class="${s.leak ? 'mnt-val danger' : (s.status === 'warn' ? 'mnt-val warn' : '')}">${s.isolated ? 'ISOLATED' : (s.leak ? 'ACTION REQUIRED' : (s.status === 'warn' ? 'Service due' : 'OK'))}</span></li>
+            <li><span class="mnt-label">Power source</span><span>Self-powered · piezo harvester</span></li>
             <li><span class="mnt-label">Radio</span><span>BLE 5.0 · adv 1 Hz</span></li>
             <li><span class="mnt-label">Signal</span><span>${s.rssi} dBm</span></li>
             <li><span class="mnt-label">Body</span><span>Brass NPT 1/2"</span></li>
+            <li><span class="mnt-label">Detection latency</span><span>&lt; 2 s vs 30+ min manual round</span></li>
           </ul>
         </div>
         <div class="panel">
@@ -1582,8 +1653,21 @@ function renderDetail(id) {
   });
   const iso = $("act-isolate");
   if (iso) iso.addEventListener("click", () => {
-    logEvent(s, "warn", "Line isolation command sent");
-    toast("warn", `${s.id} isolated`, "Downstream flow stopped");
+    s.isolated = true;
+    s.pressure = 0;
+    s.harvestUw = 0;
+    logEvent(s, "warn", "Line isolation command sent — valve closed, downstream flow stopped");
+    toast("warn", `${s.id} isolated`, "Valve closed. Downstream flow stopped.");
+    renderDetail(id); renderGrid(); renderTopology(); updateKPIs();
+  });
+  const rst = $("act-restore");
+  if (rst) rst.addEventListener("click", () => {
+    s.isolated = false;
+    s.pressure = s.basePressure;
+    s.harvestUw = 45;
+    logEvent(s, "ok", "Flow restored — valve reopened");
+    toast("ok", `${s.id} flow restored`, "Valve reopened, harvester spinning back up");
+    renderDetail(id); renderGrid(); renderTopology(); updateKPIs();
   });
   const clr = $("act-clear");
   if (clr) clr.addEventListener("click", () => {
@@ -1611,7 +1695,7 @@ function refreshDetailNumbers() {
   if (dh) dh.innerHTML = `${Math.round(s.harvestUw)} <span class="bigm-unit">µW</span>`;
   if (dg) {
     const gaugeColor = s.status === "danger" ? "#ff1f2d" : (s.status === "warn" ? "#f5a524" : "#22c55e");
-    dg.innerHTML = gaugeSVG(s.pressure, 0, 16, gaugeColor);
+    dg.innerHTML = gaugeSVG(s.pressure, 0, 80, gaugeColor);
   }
   const cp = $("d-chart-p"), ct = $("d-chart-t");
   if (cp) drawCanvasChart(cp, s.pHist, s.pressureNominal[0], s.pressureNominal[1], "#ff1f2d", pDisp, pUnit());
@@ -1712,6 +1796,16 @@ function renderWhyLive() {
   const totalUw = sensors.reduce((acc, x) => acc + x.harvestUw, 0);
   const el = $("wy-mw");
   if (el) el.textContent = Math.round(totalUw) + " µW";
+  const pal = $("fluid-palette");
+  if (pal && !pal.dataset.built) {
+    pal.dataset.built = "1";
+    pal.innerHTML = Object.values(liquidTypes).map(l => `
+      <div style="background:linear-gradient(180deg,${l.color}18,#060606);border:1px solid ${l.color}44;border-left:3px solid ${l.color};border-radius:10px;padding:12px 14px">
+        <div style="font-weight:700;color:${l.color};font-size:13px">${esc(l.name)}</div>
+        <div style="color:var(--text-dim);font-size:11px;margin-top:4px">${l.idealP[0]}–${l.idealP[1]} psi · ${l.idealT[0]}–${l.idealT[1]} °C</div>
+        <div style="color:var(--muted);font-size:11px;margin-top:6px;line-height:1.4">${esc(l.desc)}</div>
+      </div>`).join("");
+  }
 }
 document.querySelectorAll(".tab").forEach(t => {
   t.addEventListener("click", () => switchTab(t.dataset.tab));
@@ -1738,6 +1832,7 @@ $("back-btn").addEventListener("click", () => {
 $("search").addEventListener("input", (e) => { searchQuery = e.target.value; renderGrid(); });
 $("filter").addEventListener("change", (e) => { filterStatus = e.target.value; renderGrid(); });
 $("facility-filter").addEventListener("change", (e) => { filterFacility = e.target.value; renderGrid(); });
+$("liquid-filter").addEventListener("change", (e) => { filterLiquid = e.target.value; renderGrid(); });
 $("sort").addEventListener("change", (e) => { sortKey = e.target.value; renderGrid(); savePrefs(); });
 document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => {
   viewMode = b.dataset.view;
@@ -1759,7 +1854,7 @@ function triggerLeak(specificId) {
   if (!target) { toast("warn", "No healthy sensor", "All units already in alarm state."); return; }
   target.status = "danger";
   target.leak = true;
-  target.pressure = rand(1, 4);
+  target.pressure = rand(6, 14);
   target.harvestUw = rand(4, 10);
   target.rssi = clamp(Math.round(target.rssi - 20), -100, -30);
   logEvent(target, "danger", "LEAK DETECTED — pressure collapse from nominal");
@@ -1794,6 +1889,12 @@ function openDeploy() {
         </select>
       </div>
       <div class="deploy-field">
+        <label>Fluid in the line</label>
+        <select id="dep-liquid">
+          ${Object.entries(liquidTypes).map(([k, l]) => `<option value="${k}" ${k === 'process_coolant' ? 'selected' : ''}>${esc(l.name)} · ${l.idealP[0]}–${l.idealP[1]} psi</option>`).join("")}
+        </select>
+      </div>
+      <div class="deploy-field">
         <label>Location / pipe name</label>
         <input id="dep-location" placeholder="e.g. Coolant Loop E" value="Coolant Loop E">
       </div>
@@ -1818,7 +1919,11 @@ function closeDeploy() { const b = $("deploy-backdrop"); if (b) b.remove(); }
 function runInstall() {
   const facility = $("dep-facility").value;
   const location = ($("dep-location").value || "New Line").trim();
+  const liquidKey = $("dep-liquid").value;
+  const liq = liquidTypes[liquidKey];
   const id = $("dep-id").value;
+  const basePressure = Math.round((liq.idealP[0] + liq.idealP[1]) / 2);
+  const baseTemp = Math.round((liq.idealT[0] + liq.idealT[1]) / 2);
 
   const body = document.querySelector(".deploy-modal .deploy-body");
   const actions = document.querySelector(".deploy-modal .deploy-actions");
@@ -1826,7 +1931,7 @@ function runInstall() {
   body.innerHTML = `<div class="install-log" id="install-log"></div>`;
   const logEl = $("install-log");
   const lines = [
-    { t: 50,   msg: `[00:00.1] Volturn V1 seated on ${location}`, cls: "" },
+    { t: 50,   msg: `[00:00.1] Volturn V1 seated on ${location} (${liq.name})`, cls: "" },
     { t: 700,  msg: `[00:00.7] Fluid seal verified (torque 22 N·m)`, cls: "" },
     { t: 1200, msg: `[00:01.2] Piezo harvester active — 45 µW`, cls: "" },
     { t: 1700, msg: `[00:01.7] Supercap charged to 2.4 V`, cls: "" },
@@ -1846,17 +1951,18 @@ function runInstall() {
     // Add the new sensor to the fleet
     const newSensor = {
       id, facility, location,
-      basePressure: 11, baseTemp: 24,
-      pressureNominal: [8, 14], tempNominal: [15, 35],
-      pressure: 11, temperature: 24,
-      status: "ok", leak: false, acknowledged: false,
+      liquid: liquidKey, liquidObj: liq,
+      basePressure, baseTemp,
+      pressureNominal: liq.idealP, tempNominal: liq.idealT,
+      pressure: basePressure, temperature: baseTemp,
+      status: "ok", leak: false, isolated: false, acknowledged: false,
       firmware: "v0.9.2",
       lastService: new Date().toISOString().slice(0, 10),
       nextService: new Date(Date.now() + 180 * 86400000).toISOString().slice(0, 10),
       rssi: -55, harvestUw: 45,
-      pHist: Array(HISTORY_LEN).fill(11),
-      tHist: Array(HISTORY_LEN).fill(24),
-      events: [{ t: now(), kind: "ok", msg: "Unit deployed — first advertisement received" }]
+      pHist: Array(HISTORY_LEN).fill(basePressure),
+      tHist: Array(HISTORY_LEN).fill(baseTemp),
+      events: [{ t: now(), kind: "ok", msg: `Unit deployed on ${liq.name} — first advertisement received` }]
     };
     sensors.push(newSensor);
     sensorSeeds.push({ ...newSensor });
@@ -1925,7 +2031,7 @@ $("rp-play").addEventListener("click", () => {
 $("btn-reset").addEventListener("click", () => {
   sensors.forEach((s, i) => {
     const seed = sensorSeeds[i];
-    s.status = seed.status; s.leak = !!seed.leak; s.acknowledged = false;
+    s.status = seed.status; s.leak = !!seed.leak; s.acknowledged = false; s.isolated = false;
     s.pressure = seed.basePressure; s.temperature = seed.baseTemp; s.rssi = seed.rssi;
     s.pHist = Array(HISTORY_LEN).fill(s.pressure);
     s.tHist = Array(HISTORY_LEN).fill(s.temperature);
@@ -2203,18 +2309,25 @@ document.addEventListener("keydown", (e) => {
 function tick() {
   if (replayMode) return;
   sensors.forEach(s => {
-    const pJit = (Math.random() - 0.5) * 0.4;   // ±0.2 psi wobble
-    const tJit = (Math.random() - 0.5) * 0.6;   // ±0.3 °C wobble
-    if (s.leak) {
-      s.pressure  = clamp(s.pressure + pJit * 0.5, 0.5, 6);
-      s.temperature = clamp(s.temperature + tJit * 0.5, 15, 45);
-      s.harvestUw = clamp(5 + Math.random() * 8, 2, 15);  // low flow → low harvest
+    if (s.isolated) {
+      s.pressure = 0;
+      s.harvestUw = 0;
+      // temperature drifts toward ambient when isolated
+      s.temperature += (22 - s.temperature) * 0.02;
     } else {
-      const warnBumpP = s.status === "warn" ? 1 : 0;
-      const warnBumpT = s.status === "warn" ? 3 : 0;
-      s.pressure    = clamp(s.basePressure + pJit + warnBumpP, 0, 16);
-      s.temperature = clamp(s.baseTemp + tJit + warnBumpT, 15, 45);
-      s.harvestUw   = 30 + Math.random() * 55;  // 30-85 µW nominal
+      const pJit = (Math.random() - 0.5) * 1.4;
+      const tJit = (Math.random() - 0.5) * 0.7;
+      if (s.leak) {
+        s.pressure  = clamp(s.pressure + pJit * 0.3, 2, 20);
+        s.temperature += tJit * 0.5;
+        s.harvestUw = clamp(5 + Math.random() * 8, 2, 15);
+      } else {
+        const warnBumpP = s.status === "warn" ? 3 : 0;
+        const warnBumpT = s.status === "warn" ? 6 : 0;
+        s.pressure    = s.basePressure + pJit + warnBumpP;
+        s.temperature = s.baseTemp + tJit + warnBumpT;
+        s.harvestUw   = 30 + Math.random() * 55;
+      }
     }
     s.rssi = clamp(Math.round(s.rssi + (Math.random() - 0.5) * 3), -100, -35);
     s.pHist.push(s.pressure); if (s.pHist.length > HISTORY_LEN) s.pHist.shift();
