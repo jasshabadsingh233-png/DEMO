@@ -138,6 +138,25 @@
 
   main { padding: 24px 32px 40px; max-width: 1500px; margin: 0 auto; position: relative; z-index: 1; }
 
+  /* ===== Fleet Health hero ===== */
+  .health-hero {
+    display: flex; align-items: center; gap: 24px;
+    background:
+      radial-gradient(ellipse at 15% 30%, rgba(34,197,94,0.1), transparent 60%),
+      linear-gradient(180deg, var(--panel) 0%, #060606 100%);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px 28px; margin-bottom: 18px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+  .health-hero.warn  { border-color: rgba(245,165,36,0.4); background: radial-gradient(ellipse at 15% 30%, rgba(245,165,36,0.12), transparent 60%), linear-gradient(180deg, var(--panel), #060606); }
+  .health-hero.danger { border-color: var(--danger); background: radial-gradient(ellipse at 15% 30%, rgba(255,31,45,0.18), transparent 60%), linear-gradient(180deg, var(--panel), #060606); box-shadow: 0 8px 32px var(--danger-glow); }
+  .health-info { flex: 1; }
+  .health-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
+  .health-title { font-size: 22px; font-weight: 700; margin-top: 6px; }
+  .health-breakdown { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; font-size: 12px; color: var(--text-dim); }
+  .health-breakdown span { display: inline-flex; align-items: center; gap: 6px; }
+  .health-breakdown i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
   /* ===== KPI row ===== */
   .kpis {
     display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -691,6 +710,21 @@
 <main>
   <!-- OVERVIEW -->
   <section id="overview-view">
+    <div class="health-hero" id="health-hero">
+      <div class="health-score">
+        <svg viewBox="0 0 140 140" style="width:120px;height:120px">
+          <circle cx="70" cy="70" r="60" fill="none" stroke="#1a1a1a" stroke-width="10"/>
+          <circle id="health-arc" cx="70" cy="70" r="60" fill="none" stroke="#22c55e" stroke-width="10" stroke-linecap="round" stroke-dasharray="377" stroke-dashoffset="0" transform="rotate(-90 70 70)"/>
+          <text id="health-num" x="70" y="76" text-anchor="middle" fill="#f5f5f5" font-size="34" font-weight="800">100</text>
+          <text x="70" y="98" text-anchor="middle" fill="#7a7a7a" font-size="10" letter-spacing="2">/100</text>
+        </svg>
+      </div>
+      <div class="health-info">
+        <div class="health-label">FLEET HEALTH SCORE</div>
+        <div class="health-title" id="health-title">All systems nominal</div>
+        <div class="health-breakdown" id="health-breakdown"></div>
+      </div>
+    </div>
     <div class="kpis">
       <div class="kpi"><label>Total Units</label><span class="val" id="k-total">0</span><small>deployed</small></div>
       <div class="kpi ok"><label>Healthy</label><span class="val" id="k-ok">0</span><small>nominal</small></div>
@@ -891,6 +925,53 @@
       <h3>Fluids Volturn ships for today</h3>
       <p>Each Volturn variant is calibrated for its fluid's ideal pressure and temperature band. Colour-coded on this dashboard.</p>
       <div id="fluid-palette" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-top:10px"></div>
+    </div>
+
+    <div class="why-diagram-wrap" style="margin-bottom:24px">
+      <h3>ROI Calculator</h3>
+      <p>Change the inputs to see savings against a wired-IoT retrofit.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-top:14px">
+        <div>
+          <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px">Fleet size</label>
+          <input id="roi-fleet" type="number" value="16" min="1" style="width:100%;margin-top:4px">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px">Wired install $ / unit</label>
+          <input id="roi-wired" type="number" value="2200" min="0" style="width:100%;margin-top:4px">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px">Battery install $ / unit</label>
+          <input id="roi-batt" type="number" value="450" min="0" style="width:100%;margin-top:4px">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px">Volturn $ / unit</label>
+          <input id="roi-vol" type="number" value="180" min="0" style="width:100%;margin-top:4px">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px">Battery swaps / yr / unit</label>
+          <input id="roi-swaps" type="number" value="2" min="0" style="width:100%;margin-top:4px">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px">Years operational</label>
+          <input id="roi-years" type="number" value="5" min="1" style="width:100%;margin-top:4px">
+        </div>
+      </div>
+      <div id="roi-out" style="margin-top:20px;padding:16px 20px;border-radius:12px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.35);font-size:14px;color:var(--text-dim)">
+        <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Estimated savings over the period</div>
+        <div style="margin-top:6px;font-size:28px;font-weight:800;color:var(--ok)" id="roi-total">$0</div>
+        <div style="margin-top:6px;font-size:12px;color:var(--muted)" id="roi-detail">vs wired retrofit &middot; vs battery-powered IoT</div>
+      </div>
+    </div>
+
+    <div class="why-diagram-wrap" style="margin-bottom:24px">
+      <h3>Compliance &amp; Certifications</h3>
+      <p>Volturn V1 is designed and tested against the following industry standards.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+        ${["NSF-61 potable-water contact","ISO 9001:2015","IP67 dust/water","ATEX Zone 2","CE","RoHS-3","REACH","FCC Part 15","IEC 61010"].map(c => `
+          <span style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:linear-gradient(180deg,#131313,#080808);border:1px solid var(--danger);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;box-shadow:0 0 12px rgba(255,31,45,0.15)">
+            <span style="color:var(--danger)">&#10003;</span>${esc(c)}
+          </span>`).join("")}
+      </div>
     </div>
 
     <div class="why-compare">
@@ -1153,14 +1234,41 @@ function savePrefs() {
 
 /* -------- KPI helpers with tween -------- */
 function updateKPIs() {
-  let ok = 0, warn = 0, danger = 0;
+  let ok = 0, warn = 0, danger = 0, isolated = 0;
   sensors.forEach(s => {
+    if (s.isolated) isolated++;
     if (s.status === "danger") danger++;
     else if (s.status === "warn") warn++;
     else ok++;
   });
   kpiTweenTargets = { ok, warn, danger, total: sensors.length };
   $("k-total").textContent = sensors.length;
+
+  // Fleet Health Score: 100 - weighted deductions
+  const total = sensors.length || 1;
+  const deduction = Math.min(100, (danger * 18 + warn * 6 + isolated * 8) / total * 100 / 20);
+  const score = Math.max(0, Math.round(100 - deduction));
+  const arc = 377 * (1 - score / 100);
+  const arcEl = $("health-arc"), numEl = $("health-num"), heroEl = $("health-hero"),
+        titleEl = $("health-title"), breakEl = $("health-breakdown");
+  if (arcEl) {
+    arcEl.setAttribute("stroke-dashoffset", arc);
+    const c = score >= 85 ? "#22c55e" : score >= 60 ? "#f5a524" : "#ff1f2d";
+    arcEl.setAttribute("stroke", c);
+    numEl.setAttribute("fill", c);
+    numEl.textContent = score;
+    heroEl.classList.remove("warn", "danger");
+    if (score < 60) heroEl.classList.add("danger");
+    else if (score < 85) heroEl.classList.add("warn");
+    titleEl.textContent = danger > 0
+      ? `${danger} active leak${danger>1?'s':''} · immediate action`
+      : (warn > 0 ? `${warn} unit${warn>1?'s':''} need service` : "All systems nominal");
+    breakEl.innerHTML = `
+      <span><i style="background:var(--ok)"></i>${ok} healthy</span>
+      <span><i style="background:var(--warn)"></i>${warn} maintenance</span>
+      <span><i style="background:var(--danger)"></i>${danger} leaks</span>
+      <span><i style="background:var(--muted)"></i>${isolated} isolated</span>`;
+  }
 
   const secs = Math.floor((now() - sessionStart) / 1000);
   const h = Math.floor(secs / 3600);
@@ -1516,6 +1624,56 @@ function drawCanvasChart(canvas, hist, min, max, color, valFmt, valUnit) {
   ctx.fillText(`${hist.length} samples · rolling μ±2σ · last ${valFmt(hist[hist.length-1])} ${valUnit}`, padL, h - 6);
 }
 
+/* -------- Flow rate estimation --------
+   Very rough: for 1/2" NPT (~12.7 mm ID) at rated pressure ≈ 30 L/min for water,
+   scaled by sqrt(P/Pnom) and adjusted by liquid viscosity factor. */
+const viscosityFactor = { chilled_water: 1, process_coolant: 0.95, di_water: 1, glycol: 0.7, process_water: 0.98, slurry: 0.55, dielectric: 0.85, thermal_oil: 0.5, boiler_feed: 0.9 };
+function flowLpm(s) {
+  if (s.isolated || s.pressure <= 0.1) return 0;
+  const nomP = (s.liquidObj.idealP[0] + s.liquidObj.idealP[1]) / 2;
+  const vf = viscosityFactor[s.liquid] || 0.9;
+  return Math.max(0, Math.sqrt(Math.max(0, s.pressure) / nomP) * 30 * vf * (s.leak ? 0.15 : 1));
+}
+
+/* -------- Predictive maintenance --------
+   Fit a linear trend to the last N samples; project when the value would cross
+   the nominal band. Returns a human string. */
+function predictFailure(s) {
+  const n = Math.min(60, s.pHist.length);
+  if (n < 20) return { days: null, text: "Insufficient data" };
+  const slice = s.pHist.slice(-n);
+  const mean = slice.reduce((a,b) => a+b, 0) / n;
+  let num = 0, den = 0;
+  for (let i = 0; i < n; i++) { num += (i - n/2) * (slice[i] - mean); den += (i - n/2) ** 2; }
+  const slopePerTick = num / den; // psi per second
+  const [lo, hi] = s.pressureNominal;
+  if (Math.abs(slopePerTick) < 0.0005) return { days: null, text: "Stable — no failure projected" };
+  const cur = slice[slice.length - 1];
+  const target = slopePerTick > 0 ? hi : lo;
+  const ticksToHit = Math.max(0, (target - cur) / slopePerTick);
+  const days = ticksToHit * TICK_MS / 86400000;
+  if (days > 3650 || days < 0) return { days: null, text: "Stable — no near-term risk" };
+  const label = days < 1 ? `${(days*24).toFixed(1)} h` : `${days.toFixed(1)} d`;
+  return { days, text: `Projected ${slopePerTick > 0 ? 'over-range' : 'under-range'} in ${label}` };
+}
+
+/* -------- BLE ADV packet inspector -------- */
+function blePacket(s) {
+  const p = Math.round(s.pressure * 10); // psi × 10
+  const t = Math.round((s.temperature + 40) * 10); // °C offset+scale
+  const h = Math.round(s.harvestUw);
+  const rssiByte = (256 + s.rssi) & 0xff;
+  const flags = (s.leak ? 0x01 : 0) | (s.isolated ? 0x02 : 0) | (s.acknowledged ? 0x04 : 0);
+  const hex = (n, w = 2) => n.toString(16).toUpperCase().padStart(w, "0");
+  const bytes = [
+    ["02 01 06",                         "Flags — LE General Discoverable, BR/EDR not supported"],
+    ["11 07 " + s.id.split("-")[1] + " 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00", "128-bit Service UUID (SAML Volturn)"],
+    [`0D FF 53 41 4D 4C ${hex((p>>8)&0xff)} ${hex(p&0xff)} ${hex((t>>8)&0xff)} ${hex(t&0xff)} ${hex(h)} ${hex(rssiByte)} ${hex(flags)}`,
+     `Manufacturer data — "SAML" + pressure_x10=${p} + temp_offset_x10=${t} + µW=${h} + rssi=${rssiByte} + flags=0x${hex(flags)}`],
+  ];
+  return `<pre style="margin:0;font-family:'SF Mono',Menlo,monospace;font-size:11px;line-height:1.6;color:#7de8ff">${bytes.map(([b, note]) => `<span style="color:#f5f5f5">${b}</span>  <span style="color:#7a7a7a"># ${esc(note)}</span>`).join("\n")}</pre>`;
+}
+
 /* -------- Detail rendering -------- */
 function renderDetail(id) {
   const s = sensors.find(x => x.id === id);
@@ -1581,12 +1739,23 @@ function renderDetail(id) {
               <div class="bigm-range">Nominal ${tDisp(s.tempNominal[0])}&ndash;${tDisp(s.tempNominal[1])} ${tUnit()}</div>
             </div>
             <div>
-              <div class="bigm-label">Leak Sensor</div>
-              <div class="bigm-val ${s.leak ? 'danger' : ''}" style="font-size:20px">${s.leak ? 'LEAK DETECTED' : 'No Leak'}</div>
+              <div class="bigm-label">Flow Rate (estimated)</div>
+              <div class="bigm-val" style="font-size:22px" id="d-flow">${flowLpm(s).toFixed(1)}<span class="bigm-unit">L/min</span></div>
+              <div class="bigm-range">from ΔP × pipe cross-section</div>
             </div>
             <div>
               <div class="bigm-label">Energy Harvesting</div>
-              <div class="bigm-val" style="font-size:20px" id="d-harvest">${Math.round(s.harvestUw)} <span class="bigm-unit">µW</span></div>
+              <div class="bigm-val" style="font-size:22px" id="d-harvest">${Math.round(s.harvestUw)} <span class="bigm-unit">µW</span></div>
+              <div class="bigm-range">${s.isolated ? 'Line closed' : 'Powering onboard MCU + BLE'}</div>
+            </div>
+            <div>
+              <div class="bigm-label">Leak Sensor</div>
+              <div class="bigm-val ${s.leak ? 'danger' : ''}" style="font-size:18px">${s.leak ? 'LEAK DETECTED' : 'No Leak'}</div>
+            </div>
+            <div>
+              <div class="bigm-label">Predictive Maintenance</div>
+              <div class="bigm-val" style="font-size:14px;font-weight:500;color:var(--text-dim)" id="d-predict">${esc(predictFailure(s).text)}</div>
+              <div class="bigm-range">Rolling 60-sample linear projection</div>
             </div>
           </div>
           <div class="gauge-fit-wrap">
@@ -1597,6 +1766,11 @@ function renderDetail(id) {
           <canvas class="detail-chart-canvas" id="d-chart-p"></canvas>
           <h3 style="margin-top:16px">Temperature History &middot; anomaly-detection band</h3>
           <canvas class="detail-chart-canvas" id="d-chart-t"></canvas>
+          <details style="margin-top:18px;background:#030303;border:1px solid var(--border);border-radius:8px;padding:12px 16px">
+            <summary style="cursor:pointer;color:var(--text-dim);font-size:12px;text-transform:uppercase;letter-spacing:0.8px;font-weight:700">BLE ADV Packet · live decoder</summary>
+            <div style="margin-top:12px" id="d-ble">${blePacket(s)}</div>
+            <div style="margin-top:8px;font-size:11px;color:var(--muted)">Broadcast at 1 Hz on 2.4 GHz. Every metric on this page reconstructs from a 27-byte payload.</div>
+          </details>
         </div>
       </div>
 
@@ -1689,10 +1863,14 @@ function refreshDetailNumbers() {
   if (!currentDetailId) return;
   const s = sensors.find(x => x.id === currentDetailId);
   if (!s) return;
-  const dp = $("d-pressure"), dt = $("d-temp"), dh = $("d-harvest"), dg = $("d-gauge");
+  const dp = $("d-pressure"), dt = $("d-temp"), dh = $("d-harvest"), dg = $("d-gauge"),
+        df = $("d-flow"), dpr = $("d-predict"), dble = $("d-ble");
   if (dp) dp.innerHTML = `${pDisp(s.pressure)}<span class="bigm-unit">${pUnit()}</span>`;
   if (dt) dt.innerHTML = `${tDisp(s.temperature)}<span class="bigm-unit">${tUnit()}</span>`;
   if (dh) dh.innerHTML = `${Math.round(s.harvestUw)} <span class="bigm-unit">µW</span>`;
+  if (df) df.innerHTML = `${flowLpm(s).toFixed(1)}<span class="bigm-unit">L/min</span>`;
+  if (dpr) dpr.textContent = predictFailure(s).text;
+  if (dble) dble.innerHTML = blePacket(s);
   if (dg) {
     const gaugeColor = s.status === "danger" ? "#ff1f2d" : (s.status === "warn" ? "#f5a524" : "#22c55e");
     dg.innerHTML = gaugeSVG(s.pressure, 0, 80, gaugeColor);
@@ -1796,6 +1974,7 @@ function renderWhyLive() {
   const totalUw = sensors.reduce((acc, x) => acc + x.harvestUw, 0);
   const el = $("wy-mw");
   if (el) el.textContent = Math.round(totalUw) + " µW";
+  updateROI();
   const pal = $("fluid-palette");
   if (pal && !pal.dataset.built) {
     pal.dataset.built = "1";
@@ -1833,6 +2012,26 @@ $("search").addEventListener("input", (e) => { searchQuery = e.target.value; ren
 $("filter").addEventListener("change", (e) => { filterStatus = e.target.value; renderGrid(); });
 $("facility-filter").addEventListener("change", (e) => { filterFacility = e.target.value; renderGrid(); });
 $("liquid-filter").addEventListener("change", (e) => { filterLiquid = e.target.value; renderGrid(); });
+
+function updateROI() {
+  if (!$("roi-fleet")) return;
+  const n = +$("roi-fleet").value || 0;
+  const wired = +$("roi-wired").value || 0;
+  const batt = +$("roi-batt").value || 0;
+  const vol = +$("roi-vol").value || 0;
+  const swaps = +$("roi-swaps").value || 0;
+  const years = +$("roi-years").value || 0;
+  const battOngoing = swaps * 25 * years; // $25 per swap (battery + labor)
+  const savedVsWired = n * (wired - vol);
+  const savedVsBatt  = n * ((batt - vol) + battOngoing);
+  const total = savedVsWired + savedVsBatt;
+  const fmt$ = (v) => "$" + Math.max(0, Math.round(v)).toLocaleString();
+  $("roi-total").textContent = fmt$(total);
+  $("roi-detail").textContent = `${fmt$(savedVsWired)} saved vs wired · ${fmt$(savedVsBatt)} saved vs battery-powered (over ${years} yr)`;
+}
+["roi-fleet","roi-wired","roi-batt","roi-vol","roi-swaps","roi-years"].forEach(id => {
+  document.addEventListener("input", (e) => { if (e.target.id === id) updateROI(); });
+});
 $("sort").addEventListener("change", (e) => { sortKey = e.target.value; renderGrid(); savePrefs(); });
 document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => {
   viewMode = b.dataset.view;
