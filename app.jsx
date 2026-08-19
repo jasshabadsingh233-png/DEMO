@@ -1,5 +1,10 @@
 const { useState } = React;
 
+// The DEMO copy runs entirely in the browser by default: no network,
+// no backend needed. If you want to point it at the FastAPI backend
+// from the NM repo (identical logic, useful for double-checking),
+// switch the source dropdown to "Backend API" and set the URL.
+
 const DEFAULT_API_BASE =
   (typeof window !== "undefined" && window.RESIDENCY_API_BASE) ||
   localStorage.getItem("residencyApiBase") ||
@@ -48,6 +53,9 @@ function fyLabel(year) {
 }
 
 function App() {
+  const [source, setSource] = useState(
+    localStorage.getItem("residencySource") || "local",
+  );
   const [apiBase, setApiBase] = useState(DEFAULT_API_BASE);
   const [citizenship, setCitizenship] = useState("indian");
   const [trips, setTrips] = useState([
@@ -106,41 +114,64 @@ function App() {
     setIncomes((prev) => prev.filter((_, j) => j !== i));
   }
 
+  function buildInput() {
+    const fyStartYears = [];
+    for (let y = fyRange.start; y <= fyRange.end; y++) fyStartYears.push(y);
+    const normalisedIncomes = incomes.map((y) => ({
+      fy_start_year: y.fy_start_year,
+      indian_source_income_inr: y.indian_source_income_inr,
+      liable_to_tax_elsewhere:
+        y.liable_to_tax_elsewhere === "yes"
+          ? true
+          : y.liable_to_tax_elsewhere === "no"
+            ? false
+            : null,
+    }));
+    return {
+      citizenship,
+      trips,
+      incomes: normalisedIncomes,
+      fy_start_years: fyStartYears,
+      current_stay_purpose_override: currentStayPurpose || null,
+    };
+  }
+
   async function calculate() {
     setLoading(true);
     setError(null);
     setResults(null);
     try {
-      const fyStartYears = [];
-      for (let y = fyRange.start; y <= fyRange.end; y++) fyStartYears.push(y);
-      const payload = {
-        citizenship,
-        trips,
-        incomes: incomes.map((y) => ({
-          ...y,
-          liable_to_tax_elsewhere:
-            y.liable_to_tax_elsewhere === "yes"
-              ? true
-              : y.liable_to_tax_elsewhere === "no"
-                ? false
-                : null,
-        })),
-        fy_start_years: fyStartYears,
-      };
-      if (currentStayPurpose) {
-        payload.current_stay_purpose_override = currentStayPurpose;
+      localStorage.setItem("residencySource", source);
+      const input = buildInput();
+      if (source === "local") {
+        const rows = window.ResidencyCalc.calculate({
+          trips: input.trips,
+          incomes: input.incomes,
+          citizenship: input.citizenship,
+          fyStartYears: input.fy_start_years,
+          currentStayPurposeOverride: input.current_stay_purpose_override,
+        });
+        setResults({ calculation_id: "in-browser", results: rows });
+      } else {
+        localStorage.setItem("residencyApiBase", apiBase);
+        const payload = { ...input };
+        if (!payload.current_stay_purpose_override) {
+          delete payload.current_stay_purpose_override;
+        } else {
+          payload.current_stay_purpose_override =
+            input.current_stay_purpose_override;
+        }
+        const res = await fetch(`${apiBase}/calculate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`HTTP ${res.status}: ${text}`);
+        }
+        setResults(await res.json());
       }
-      localStorage.setItem("residencyApiBase", apiBase);
-      const res = await fetch(`${apiBase}/calculate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`HTTP ${res.status}: ${text}`);
-      }
-      setResults(await res.json());
     } catch (e) {
       setError(String(e.message || e));
     } finally {
@@ -157,22 +188,35 @@ function App() {
       </p>
 
       <div className="card">
-        <h3>Backend</h3>
-        <div className="row" style={{ gridTemplateColumns: "1fr" }}>
+        <h3>Source</h3>
+        <div className="row">
           <div>
-            <label>API base URL</label>
-            <input
-              type="url"
-              value={apiBase}
-              onChange={(e) => setApiBase(e.target.value)}
-              placeholder="http://localhost:8000"
-            />
-            <p className="muted">
-              Saved locally. Point this at a running instance of the
-              FastAPI backend from the NM repo.
-            </p>
+            <label>Where to compute</label>
+            <select
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+            >
+              <option value="local">In this browser (offline)</option>
+              <option value="api">Backend API</option>
+            </select>
           </div>
+          {source === "api" && (
+            <div style={{ gridColumn: "span 3" }}>
+              <label>API base URL</label>
+              <input
+                type="url"
+                value={apiBase}
+                onChange={(e) => setApiBase(e.target.value)}
+                placeholder="http://localhost:8000"
+              />
+            </div>
+          )}
         </div>
+        <p className="muted">
+          {source === "local"
+            ? "All logic runs locally via calculator.js — the JS mirror of the FastAPI backend. Nothing leaves this page."
+            : "Requests go to the FastAPI backend at the URL above."}
+        </p>
       </div>
 
       <div className="card">
@@ -214,7 +258,7 @@ function App() {
           <div>
             <label>
               Purpose of current stay (override)
-              <span className="muted"> — leave blank to infer from trips</span>
+              <span className="muted"> — blank = infer from trips</span>
             </label>
             <select
               value={currentStayPurpose}
@@ -365,7 +409,12 @@ function App() {
 function Results({ data }) {
   return (
     <div className="card" style={{ marginTop: 16 }}>
-      <h3>Results (calculation #{data.calculation_id})</h3>
+      <h3>
+        Results{" "}
+        <span className="muted" style={{ fontWeight: "normal" }}>
+          (calculation #{data.calculation_id})
+        </span>
+      </h3>
       <div className="scroll-x">
         <table>
           <thead>
@@ -430,7 +479,10 @@ function Results({ data }) {
           <ol className="audit">
             {r.audit_trail.map((x, i) => (
               <li key={i}>
-                <strong>{x.passed ? "✓" : "·"} {x.section}</strong> — {x.detail}
+                <strong>
+                  {x.passed ? "✓" : "·"} {x.section}
+                </strong>{" "}
+                — {x.detail}
               </li>
             ))}
           </ol>
