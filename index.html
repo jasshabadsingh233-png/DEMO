@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>India Residency Calculator</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #fafafa;
+        --fg: #111;
+        --card: #fff;
+        --border: #d6d6d6;
+        --muted: #666;
+        --accent: #2a4d7f;
+        --warn-bg: #fff5d6;
+        --warn-fg: #7a5900;
+        --ok-bg: #e5f4e5;
+        --ok-fg: #2b6b2b;
+        --bad-bg: #fbe5e5;
+        --bad-fg: #8a1e1e;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #12141a;
+          --fg: #e8e8e8;
+          --card: #1c1f27;
+          --border: #333844;
+          --muted: #9aa3b0;
+          --accent: #7fa6d6;
+          --warn-bg: #3a3010;
+          --warn-fg: #f0d68a;
+          --ok-bg: #143a1a;
+          --ok-fg: #a8daa4;
+          --bad-bg: #3a1414;
+          --bad-fg: #f0a0a0;
+        }
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; padding: 24px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--bg); color: var(--fg);
+        max-width: 1200px; margin: 0 auto;
+      }
+      h1 { font-weight: 500; margin-top: 0; }
+      .card {
+        background: var(--card); border: 1px solid var(--border);
+        border-radius: 6px; padding: 16px; margin-bottom: 16px;
+      }
+      label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+      input, select {
+        font: inherit; padding: 6px 8px; border: 1px solid var(--border);
+        border-radius: 4px; background: var(--card); color: var(--fg);
+        width: 100%;
+      }
+      button {
+        font: inherit; padding: 8px 14px; border: 1px solid var(--accent);
+        background: var(--accent); color: white; border-radius: 4px; cursor: pointer;
+      }
+      button.secondary {
+        background: transparent; color: var(--accent);
+      }
+      button:disabled { opacity: 0.5; cursor: not-allowed; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: top; }
+      th { color: var(--muted); font-weight: 500; }
+      .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 8px; }
+      .row.trip { grid-template-columns: 1fr 1fr 1fr auto; }
+      .row.income { grid-template-columns: 1fr 1fr 1fr auto; }
+      .badge {
+        display: inline-block; padding: 2px 8px; border-radius: 12px;
+        font-size: 12px; font-weight: 500;
+      }
+      .badge.ok { background: var(--ok-bg); color: var(--ok-fg); }
+      .badge.warn { background: var(--warn-bg); color: var(--warn-fg); }
+      .badge.bad { background: var(--bad-bg); color: var(--bad-fg); }
+      .muted { color: var(--muted); font-size: 12px; }
+      .audit { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; margin-top: 12px; }
+      .audit li { margin-bottom: 4px; }
+      details { margin-top: 8px; }
+      summary { cursor: pointer; color: var(--accent); font-size: 13px; }
+      .error { color: var(--bad-fg); background: var(--bad-bg); padding: 8px; border-radius: 4px; }
+      .scroll-x { overflow-x: auto; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel" data-type="module" src="./app.jsx"></script>
+  </body>
+</html>
