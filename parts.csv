@@ -1,0 +1,26 @@
+part_id,name,category,material,standard,thread_size,key_dimensions,finish,application,min_order_qty,lead_time_weeks
+RI-1001,"Male Hex Nipple 1/2"" BSP",Pipe Fittings,CW617N,BS EN 12165,"1/2"" BSP",L 40mm x Hex 24mm,Natural Brass,Plumbing and water supply lines,500,3
+RI-1002,"Female Elbow 90° 3/4"" BSP",Pipe Fittings,CW617N,BS EN 12165,"3/4"" BSP",L 32mm x Hex 30mm,Nickel Plated,Sanitary and utility piping,500,3
+RI-1003,"Reducing Bush 3/4"" x 1/2"" BSP",Pipe Fittings,CW617N,BS EN 12165,"3/4"" x 1/2"" BSP",L 22mm x Hex 26mm,Natural Brass,Plumbing size adaptation,500,3
+RI-1004,Compression Ferrule 15mm,Pipe Fittings,CW614N,EN 1254-2,15mm,OD 15mm x L 8mm,Natural Brass,Copper pipe compression joints,5000,3
+RI-1005,"PPR Insert Female 1/2"" BSP",Moulding Inserts,CW614N,DIN EN 12164,"1/2"" BSP",OD 22mm x L 20mm,Natural Brass,PPR pipe fittings and joints,1000,2
+RI-1006,"PPR Insert Male 3/4"" BSP",Moulding Inserts,CW614N,DIN EN 12164,"3/4"" BSP",OD 26mm x L 22mm,Natural Brass,PPR pipe fittings and joints,1000,2
+RI-1007,"CPVC Insert Female 1/2""",Moulding Inserts,CW614N,DIN 3901,"1/2"" BSP",OD 18mm x L 18mm,Natural Brass,CPVC pipe fittings and joints,1000,2
+RI-1008,Hex Moulding Insert M6,Moulding Inserts,CW614N,DIN 16903,M6 x 1.0,OD 8mm x L 10mm,Natural Brass,Plastic injection moulded parts,5000,2
+RI-1009,Round Knurled Insert M4,Moulding Inserts,CW614N,DIN 16903,M4 x 0.7,OD 5.6mm x L 8mm,Natural Brass,Plastic housing assembly,5000,2
+RI-1010,Neutral Link 6-Way 63A,Electrical Components,CW614N,IS 1264,M3 grub screw,L 60mm x W 10mm x H 12mm,Nickel Plated,LT distribution panels,500,4
+RI-1011,Terminal Block Body 15A,Electrical Components,CW614N,IEC 60998,M3.5 grub screw,L 25mm x W 8mm x H 8mm,Natural Brass,Wiring accessories and connectors,1000,4
+RI-1012,Earth Clamp Bar 25mm,Electrical Components,CW614N,IS 3043,M6 stud,L 100mm x W 25mm x H 6mm,Nickel Plated,Earthing and bonding systems,500,4
+RI-1013,Round Pin Socket Contact 6A,Electrical Components,CW724R,IS 1293,Press fit,OD 4mm x L 20mm,Tin Plated,Domestic switch sockets,2000,3
+RI-1014,Male-Female PCB Standoff M3 x 15mm,Electrical Components,CW614N,DIN 6923,M3 x 0.5,Hex 5mm x L 15mm,Natural Brass,PCB and enclosure assembly,5000,3
+RI-1015,Cable Gland Body PG13.5,Electrical Components,CW614N,EN 50262,PG13.5,Thread OD 20mm x L 25mm,Nickel Plated,Cable entry sealing on enclosures,1000,3
+RI-1016,Concrete Anchor M8 x 30mm,Anchors & Fasteners,CW614N,DIN 8140,M8 x 1.25,OD 10mm x L 30mm,Natural Brass,Concrete and masonry anchoring,1000,3
+RI-1017,Rawl Plug Anchor 5mm,Anchors & Fasteners,CW614N,IS 3499,5mm,OD 5mm x L 20mm,Natural Brass,Light wall fixings,5000,2
+RI-1018,"Sanitary Elbow 90° 1/2"" BSP",Sanitary Fittings,CW617N,EN 1254-3,"1/2"" BSP",L 35mm x Hex 27mm,Chrome Plated,Bathroom and kitchen fittings,500,4
+RI-1019,"Angle Stop Valve Body 1/2"" BSP",Sanitary Fittings,CW617N,EN 200,"1/2"" BSP",L 55mm x Hex 22mm,Chrome Plated,Wash basin and cistern supply,300,5
+RI-1020,Long Body Bibcock Forging Blank,Sanitary Fittings,CW617N,IS 8931,"1/2"" BSP",L 120mm x Hex 30mm,Chrome Plated,Garden and bathroom taps,300,5
+RI-1021,"Gas Valve Body 3/8"" BSP",Sanitary Fittings,CW617N,EN 331,"3/8"" BSP",L 45mm x Hex 24mm,Natural Brass,LPG and domestic gas installations,500,6
+RI-1022,"Radiator Air Vent 1/8"" BSP",Sanitary Fittings,CW614N,EN 215,"1/8"" BSP",L 22mm x Hex 12mm,Nickel Plated,Central heating radiators,1000,4
+RI-1023,"Flare Nut 1/4"" SAE",Automotive Components,CW614N,SAE J512,"1/4"" SAE",Hex 14mm x L 16mm,Natural Brass,Refrigeration and AC lines,2000,3
+RI-1024,Banjo Bolt M10 x 1.0,Automotive Components,CW617N,DIN 7643,M10 x 1.0,L 22mm x Hex 14mm,Nickel Plated,Hydraulic brake and fuel lines,1000,4
+RI-1025,Straight Grease Nipple M6,Automotive Components,CW614N,DIN 71412,M6 x 1.0,Hex 7mm x L 16mm,Zinc Plated,Bearing and bushing lubrication,2000,3
